@@ -198,3 +198,39 @@ func StandardWebFS(embed embed.FS, local bool, options ...TemplateCacheOption) (
 	templateCache := NewTemplateCache(templateFs, options...)
 	return templateCache, http.FileServer(http.FS(staticFs)), nil
 }
+
+// TemplateFS returns a fs.FS that point to web/template directory.
+// If local is true, it will read files from local web/ directory for live reload,
+// otherwise it will read files from the embed.FS.
+func TemplateFS(embed embed.FS, local bool) (fs.FS, error) {
+	fileSystem, err := fs.Sub(embed, "web")
+	if err != nil {
+		return nil, err
+	}
+
+	if local {
+		if _, err := os.Stat("web"); err != nil {
+			return nil, err
+		}
+		fileSystem = os.DirFS("web")
+	}
+	return fs.Sub(fileSystem, "template")
+}
+
+// StaticFS returns a fs.FS that point to web/static directory.
+// If local is true, it will read files from local web/ directory for live reload,
+// otherwise it will read files from the embed.FS.
+func StaticFS(embed embed.FS, local bool) (fs.FS, error) {
+	fileSystem, err := fs.Sub(embed, "web")
+	if err != nil {
+		return nil, err
+	}
+
+	if local {
+		if _, err := os.Stat("web"); err != nil {
+			return nil, err
+		}
+		fileSystem = os.DirFS("web")
+	}
+	return fs.Sub(fileSystem, "static")
+}
