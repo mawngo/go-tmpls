@@ -2,7 +2,7 @@ package tmpls
 
 import (
 	"embed"
-	"github.com/mawngo/go-tmpls"
+	"github.com/mawngo/go-tmpls/cache"
 	"io"
 	"io/fs"
 	"net/http"
@@ -15,7 +15,7 @@ import (
 // TemplateCache template caching.
 type TemplateCache struct {
 	fs      fs.FS
-	cache   tmpls.Cache[*template.Template]
+	cache   cache.Cache[*template.Template]
 	base    *template.Template
 	mu      sync.RWMutex
 	nocache bool
@@ -26,12 +26,12 @@ type TemplateCacheOption func(*templateCacheOptions)
 
 type templateCacheOptions struct {
 	base    *template.Template
-	cache   tmpls.Cache[*template.Template]
+	cache   cache.Cache[*template.Template]
 	nocache bool
 }
 
 // WithCache configure the underlying cache implementation.
-func WithCache(cache tmpls.Cache[*template.Template]) TemplateCacheOption {
+func WithCache(cache cache.Cache[*template.Template]) TemplateCacheOption {
 	return func(options *templateCacheOptions) {
 		options.cache = cache
 	}
@@ -55,7 +55,7 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) *TemplateCache {
 	opt := templateCacheOptions{
 		base:    template.New(""),
 		nocache: false,
-		cache:   make(tmpls.MapCache[*template.Template]),
+		cache:   make(cache.MapCache[*template.Template]),
 	}
 	for _, option := range options {
 		option(&opt)

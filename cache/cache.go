@@ -1,4 +1,4 @@
-package tmpls
+package cache
 
 type Cache[T any] interface {
 	Get(key string) (T, bool)
