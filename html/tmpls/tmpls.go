@@ -1,15 +1,15 @@
-package html
+package tmpls
 
 import (
 	"embed"
 	"github.com/mawngo/go-tmpls"
+	"html/template"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
-	"text/template"
 )
 
 // TemplateCache template caching.
