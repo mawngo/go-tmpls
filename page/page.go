@@ -126,3 +126,25 @@ func (p Page[T]) PathToSearch(search string) string {
 	}
 	return p.URL.Path
 }
+
+// PathWithParam returns the URL path with additional query param appended.
+func (p Page[T]) PathWithParam(param string, values ...string) string {
+	query := p.URL.Query()
+	if _, ok := query[param]; !ok {
+		query[param] = make([]string, 0, len(values))
+	}
+	query[param] = append(query[param], values...)
+	if q := query.Encode(); q != "" {
+		return p.URL.Path + "?" + q
+	}
+	return p.URL.Path
+}
+
+// PathWithQuery returns the URL path with query string appended.
+func (p Page[T]) PathWithQuery(queryString string) string {
+	query := p.URL.RawQuery
+	if query == "" {
+		return p.URL.Path + "?" + queryString
+	}
+	return p.URL.Path + "?" + query + "&" + queryString
+}
