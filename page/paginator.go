@@ -50,7 +50,7 @@ func NewPaginator(req *http.Request, sorts ...string) Paginator {
 		}
 	}
 	if search := query.Get(ParamSearch); search != "" {
-		p.Search = search
+		p.Search = strings.TrimSpace(search)
 	}
 	if !query.Has(ParamSort) {
 		return p
@@ -65,6 +65,8 @@ func NewPaginator(req *http.Request, sorts ...string) Paginator {
 			}
 		}
 	}
-	p.Sorts = NewSorts(s...)
+	if len(s) > 0 {
+		p.Sorts = NewSorts(s...)
+	}
 	return p
 }

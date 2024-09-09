@@ -8,6 +8,10 @@ func NewSorts(sorts ...string) Sorts {
 	}
 	parseds := make([]string, 0, len(sorts))
 	for _, sort := range sorts {
+		sort = strings.TrimSpace(sort)
+		if sort == "" {
+			continue
+		}
 		if strings.HasSuffix(sort, " desc") || strings.HasSuffix(sort, " asc") {
 			parseds = append(parseds, sort)
 			continue
