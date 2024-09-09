@@ -6,50 +6,71 @@ import (
 	"strconv"
 )
 
+type Pageable interface {
+	_dontImplThisInterface()
+	HasNext() bool
+	HasPrevious() bool
+	NextPage() int
+	PreviousPage() int
+	CurrentPage() int
+	ElementsPerPage() int
+}
+
 type Page[T any] struct {
-	Data            []T
-	TotalElements   int64
-	TotalPages      int
-	ElementsPerPage int
-	CurrentPage     int
-	Search          string
-	Sorts           Sorts
-	URL             *url.URL
+	Data          []T
+	TotalElements int64
+	TotalPages    int
+	Size          int
+	Page          int
+	Search        string
+	Sorts         Sorts
+	URL           *url.URL
 }
 
 func NewPage[T any](data []T, total int64, p Paginator) Page[T] {
 	return Page[T]{
-		Data:            data,
-		TotalElements:   total,
-		TotalPages:      int(math.Ceil(float64(total) / float64(p.Size))),
-		CurrentPage:     p.Page,
-		Search:          p.Search,
-		ElementsPerPage: p.Size,
-		Sorts:           p.Sorts,
-		URL:             p.URL,
+		Data:          data,
+		TotalElements: total,
+		TotalPages:    int(math.Ceil(float64(total) / float64(p.Size))),
+		Page:          p.Page,
+		Search:        p.Search,
+		Size:          p.Size,
+		Sorts:         p.Sorts,
+		URL:           p.URL,
 	}
 }
 
+func (p Page[T]) _dontImplThisInterface() {
+}
+
 func (p Page[T]) HasNext() bool {
-	return p.CurrentPage < p.TotalPages
+	return p.Page < p.TotalPages
+}
+
+func (p Page[T]) CurrentPage() int {
+	return p.Page
+}
+
+func (p Page[T]) ElementsPerPage() int {
+	return p.Size
 }
 
 func (p Page[T]) HasPrevious() bool {
-	return p.CurrentPage > 1
+	return p.Page > 1
 }
 
 func (p Page[T]) NextPage() int {
 	if !p.HasNext() {
-		return p.CurrentPage
+		return p.Page
 	}
-	return p.CurrentPage + 1
+	return p.Page + 1
 }
 
 func (p Page[T]) PreviousPage() int {
 	if !p.HasPrevious() {
-		return p.CurrentPage
+		return p.Page
 	}
-	return p.CurrentPage - 1
+	return p.Page - 1
 }
 
 func (p Page[T]) PathToNext() string {
