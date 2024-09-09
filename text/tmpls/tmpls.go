@@ -26,10 +26,11 @@ type TemplateCache struct {
 type TemplateCacheOption func(*templateCacheOptions)
 
 type templateCacheOptions struct {
-	base     *template.Template
 	cache    cache.Cache[*template.Template]
 	nocache  bool
 	excludes []string
+	funcs    template.FuncMap
+	globs    []string
 }
 
 // WithCache configure the underlying cache implementation.
@@ -39,10 +40,17 @@ func WithCache(cache cache.Cache[*template.Template]) TemplateCacheOption {
 	}
 }
 
-// WithBase set the base template to use.
-func WithBase(t *template.Template) TemplateCacheOption {
+// WithGlobs set the base template globs.
+func WithGlobs(globs ...string) TemplateCacheOption {
 	return func(options *templateCacheOptions) {
-		options.base = t
+		options.globs = globs
+	}
+}
+
+// WithFuncs set the base template functions.
+func WithFuncs(funcs template.FuncMap) TemplateCacheOption {
+	return func(options *templateCacheOptions) {
+		options.funcs = funcs
 	}
 }
 
@@ -61,25 +69,43 @@ func WithoutBuiltins(funcNames ...string) TemplateCacheOption {
 	}
 }
 
-func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) *TemplateCache {
+func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache, error) {
 	opt := templateCacheOptions{
-		base:    template.New(""),
 		nocache: false,
 		cache:   make(cache.MapCache[*template.Template]),
 	}
 	for _, option := range options {
 		option(&opt)
 	}
-	opt.base = template.Must(opt.base.Clone())
-	if funcs := internal.NewBuiltinFuncMap(opt.excludes...); len(funcs) > 0 {
-		opt.base = opt.base.Funcs(internal.NewBuiltinFuncMap(opt.excludes...))
+	base := template.New("")
+	if len(opt.funcs) > 0 {
+		base = base.Funcs(opt.funcs)
 	}
+	if funcs := internal.NewBuiltinFuncMap(opt.excludes...); len(funcs) > 0 {
+		base = base.Funcs(internal.NewBuiltinFuncMap(opt.excludes...))
+	}
+	if len(opt.globs) > 0 {
+		var err error
+		base, err = base.ParseFS(fs, opt.globs...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &TemplateCache{
 		fs:      fs,
 		cache:   opt.cache,
-		base:    opt.base,
+		base:    base,
 		nocache: opt.nocache,
+	}, nil
+}
+
+func MustNewTemplateCache(fs fs.FS, options ...TemplateCacheOption) *TemplateCache {
+	c, err := NewTemplateCache(fs, options...)
+	if err != nil {
+		panic(err)
 	}
+	return c
 }
 
 func (t *TemplateCache) MustParse(file string, globs ...string) *template.Template {
@@ -209,7 +235,10 @@ func StandardWebFS(embed embed.FS, local bool, options ...TemplateCacheOption) (
 	if err != nil {
 		return nil, nil, err
 	}
-	templateCache := NewTemplateCache(templateFs, options...)
+	templateCache, err := NewTemplateCache(templateFs, options...)
+	if err != nil {
+		return nil, nil, err
+	}
 	return templateCache, http.FileServer(http.FS(staticFs)), nil
 }
 
@@ -248,5 +277,3 @@ func StaticFS(embed embed.FS, local bool) (fs.FS, error) {
 	}
 	return fs.Sub(fileSystem, "static")
 }
-
-// NewTemplateCache returns a TemplateCache.
