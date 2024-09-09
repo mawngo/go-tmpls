@@ -26,11 +26,12 @@ type TemplateCache struct {
 type TemplateCacheOption func(*templateCacheOptions)
 
 type templateCacheOptions struct {
-	cache    cache.Cache[*template.Template]
-	nocache  bool
-	excludes []string
-	funcs    template.FuncMap
-	globs    []string
+	cache           cache.Cache[*template.Template]
+	nocache         bool
+	excludes        []string
+	disableBuiltins bool
+	funcs           template.FuncMap
+	globs           []string
 }
 
 // WithCache configure the underlying cache implementation.
@@ -66,6 +67,9 @@ func WithNocache(nocache bool) TemplateCacheOption {
 func WithoutBuiltins(funcNames ...string) TemplateCacheOption {
 	return func(options *templateCacheOptions) {
 		options.excludes = funcNames
+		if len(funcNames) == 0 {
+			options.disableBuiltins = true
+		}
 	}
 }
 
@@ -78,8 +82,10 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache,
 		option(&opt)
 	}
 	base := template.New("")
-	if funcs := internal.NewBuiltinFuncMap(opt.excludes...); len(funcs) > 0 {
-		base = base.Funcs(internal.NewBuiltinFuncMap(opt.excludes...))
+	if !opt.disableBuiltins {
+		if funcs := internal.NewBuiltinFuncMap(opt.excludes...); len(funcs) > 0 {
+			base = base.Funcs(internal.NewBuiltinFuncMap(opt.excludes...))
+		}
 	}
 	if len(opt.funcs) > 0 {
 		base = base.Funcs(opt.funcs)
