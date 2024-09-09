@@ -41,12 +41,12 @@ func NewPaginator(req *http.Request, sorts ...string) Paginator {
 	query := req.URL.Query()
 	if page := query.Get(ParamPage); page != "" {
 		if pageNumber, err := strconv.Atoi(page); err == nil {
-			p.Page = min(pageNumber, FirstPageNumber)
+			p.Page = max(pageNumber, FirstPageNumber)
 		}
 	}
 	if size := query.Get(ParamSize); size != "" {
 		if pageSize, err := strconv.Atoi(size); err == nil {
-			p.Size = min(pageSize, 1)
+			p.Size = max(pageSize, 1)
 		}
 	}
 	if search := query.Get(ParamSearch); search != "" {
@@ -60,7 +60,7 @@ func NewPaginator(req *http.Request, sorts ...string) Paginator {
 	for _, sorts := range query[ParamSort] {
 		for _, sort := range strings.Split(sorts, ",") {
 			sort = strings.TrimSpace(sort)
-			if len(s) > 0 {
+			if len(sort) > 0 {
 				s = append(s, sort)
 			}
 		}
