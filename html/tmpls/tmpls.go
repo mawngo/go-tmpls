@@ -78,11 +78,11 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache,
 		option(&opt)
 	}
 	base := template.New("")
-	if len(opt.funcs) > 0 {
-		base = base.Funcs(opt.funcs)
-	}
 	if funcs := internal.NewBuiltinFuncMap(opt.excludes...); len(funcs) > 0 {
 		base = base.Funcs(internal.NewBuiltinFuncMap(opt.excludes...))
+	}
+	if len(opt.funcs) > 0 {
+		base = base.Funcs(opt.funcs)
 	}
 	if len(opt.globs) > 0 {
 		var err error
