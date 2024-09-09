@@ -3,6 +3,7 @@ package tmpls
 import (
 	"embed"
 	"github.com/mawngo/go-tmpls/cache"
+	"github.com/mawngo/go-tmpls/internal"
 	"html/template"
 	"io"
 	"io/fs"
@@ -25,9 +26,10 @@ type TemplateCache struct {
 type TemplateCacheOption func(*templateCacheOptions)
 
 type templateCacheOptions struct {
-	base    *template.Template
-	cache   cache.Cache[*template.Template]
-	nocache bool
+	base     *template.Template
+	cache    cache.Cache[*template.Template]
+	nocache  bool
+	excludes []string
 }
 
 // WithCache configure the underlying cache implementation.
@@ -51,6 +53,14 @@ func WithNocache(nocache bool) TemplateCacheOption {
 	}
 }
 
+// WithoutBuiltins exclude specific built-in functions.
+// if no function name is passed, all built-in functions will be excluded.
+func WithoutBuiltins(funcNames ...string) TemplateCacheOption {
+	return func(options *templateCacheOptions) {
+		options.excludes = funcNames
+	}
+}
+
 func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) *TemplateCache {
 	opt := templateCacheOptions{
 		base:    template.New(""),
@@ -59,6 +69,10 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) *TemplateCache {
 	}
 	for _, option := range options {
 		option(&opt)
+	}
+	opt.base = template.Must(opt.base.Clone())
+	if funcs := internal.NewBuiltinFuncMap(opt.excludes...); len(funcs) > 0 {
+		opt.base = opt.base.Funcs(internal.NewBuiltinFuncMap(opt.excludes...))
 	}
 	return &TemplateCache{
 		fs:      fs,
@@ -234,3 +248,5 @@ func StaticFS(embed embed.FS, local bool) (fs.FS, error) {
 	}
 	return fs.Sub(fileSystem, "static")
 }
+
+// NewTemplateCache returns a TemplateCache.
