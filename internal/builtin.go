@@ -12,6 +12,9 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 		"dict":   dict,
 		"dig":    dig,
 		"strval": strval,
+		"N": func(n int) []struct{} {
+			return make([]struct{}, n)
+		},
 		"add": func(i ...int) int {
 			a := 0
 			for _, b := range i {
