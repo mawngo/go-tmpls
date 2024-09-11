@@ -17,7 +17,7 @@ import (
 type TemplateCache struct {
 	fs      fs.FS
 	cache   cache.Cache[*template.Template]
-	base    *template.Template
+	baseFn  func() (*template.Template, error)
 	mu      sync.RWMutex
 	nocache bool
 }
@@ -90,6 +90,7 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache,
 	if len(opt.funcs) > 0 {
 		base = base.Funcs(opt.funcs)
 	}
+
 	if len(opt.globs) > 0 {
 		var err error
 		base, err = base.ParseFS(fs, opt.globs...)
@@ -98,10 +99,32 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache,
 		}
 	}
 
+	var baseFn func() (*template.Template, error)
+	if opt.nocache {
+		baseFn = func() (*template.Template, error) {
+			clone, err := base.Clone()
+			if err != nil {
+				return nil, err
+			}
+			return clone.ParseFS(fs, opt.globs...)
+		}
+	} else {
+		if len(opt.globs) > 0 {
+			var err error
+			base, err = base.ParseFS(fs, opt.globs...)
+			if err != nil {
+				return nil, err
+			}
+		}
+		baseFn = func() (*template.Template, error) {
+			return base.Clone()
+		}
+	}
+
 	return &TemplateCache{
 		fs:      fs,
 		cache:   opt.cache,
-		base:    base,
+		baseFn:  baseFn,
 		nocache: opt.nocache,
 	}, nil
 }
@@ -162,7 +185,7 @@ func (t *TemplateCache) Parse(file string, globs ...string) (*template.Template,
 }
 
 func (t *TemplateCache) parse(file string, globs ...string) (*template.Template, error) {
-	clone, err := t.base.Clone()
+	clone, err := t.baseFn()
 	if err != nil {
 		return nil, err
 	}
