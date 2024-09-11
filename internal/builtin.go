@@ -12,8 +12,18 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 		"dict":   dict,
 		"dig":    dig,
 		"strval": strval,
-		"N": func(n int) []struct{} {
-			return make([]struct{}, n)
+		"N": func(n int, v ...any) []any {
+			arr := make([]any, 0, n)
+			if len(v) == 0 {
+				for i := 0; i < n; i++ {
+					arr = append(arr, i)
+				}
+				return arr
+			}
+			for i := 0; i < n; i++ {
+				arr = append(arr, v[0])
+			}
+			return arr
 		},
 		"add": func(i ...int) int {
 			a := 0
