@@ -222,14 +222,33 @@ func (t *TemplateCache) Execute(wr io.Writer, data any, file string, globs ...st
 	return tmpl.ExecuteTemplate(wr, file, data)
 }
 
-func (t *TemplateCache) MustExecuteTemplate(wr io.Writer, name string, data any, file string, globs ...string) {
-	err := t.ExecuteTemplate(wr, name, data, file, globs...)
+func (t *TemplateCache) ExecuteBase(wr io.Writer, name string, data any) error {
+	tmpl, err := t.baseFn()
+	if err != nil {
+		return err
+	}
+	return tmpl.ExecuteTemplate(wr, name, data)
+}
+
+func (t *TemplateCache) MustExecuteTemplate(wr io.Writer, name string, data any, globs ...string) {
+	err := t.ExecuteTemplate(wr, name, data, globs...)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (t *TemplateCache) ExecuteTemplate(wr io.Writer, name string, data any, file string, globs ...string) error {
+func (t *TemplateCache) ExecuteTemplate(wr io.Writer, name string, data any, globs ...string) error {
+	if len(globs) == 0 {
+		// Execute directly on base if no globs are provided.
+		return t.ExecuteBase(wr, name, data)
+	}
+
+	file := globs[0]
+	if len(globs) > 1 {
+		globs = globs[1:]
+	} else {
+		globs = nil
+	}
 	tmpl, err := t.Parse(file, globs...)
 	if err != nil {
 		return err
