@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"strings"
 	"text/template"
 )
 
@@ -32,7 +33,10 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 			}
 			return a
 		},
-		"sub": func(a, b int) int { return a - b },
+		"sub":   func(a, b int) int { return a - b },
+		"upper": strings.ToUpper,
+		"lower": strings.ToLower,
+		"title": strings.ToTitle,
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
