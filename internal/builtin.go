@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"text/template"
+	"time"
 )
 
 func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
@@ -33,10 +34,12 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 			}
 			return a
 		},
-		"sub":   func(a, b int) int { return a - b },
-		"upper": strings.ToUpper,
-		"lower": strings.ToLower,
-		"title": strings.ToTitle,
+		"sub":      func(a, b int) int { return a - b },
+		"upper":    strings.ToUpper,
+		"lower":    strings.ToLower,
+		"title":    strings.ToTitle,
+		"date":     date,
+		"datetime": datetime,
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
@@ -57,6 +60,20 @@ func strval(v any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func date(v time.Time, format ...string) string {
+	if len(format) == 0 {
+		return v.Format(time.DateOnly)
+	}
+	return v.Format(format[0])
+}
+
+func datetime(v time.Time, format ...string) string {
+	if len(format) == 0 {
+		return v.Format(time.DateTime)
+	}
+	return v.Format(format[0])
 }
 
 // dict https://github.com/Masterminds/sprig
