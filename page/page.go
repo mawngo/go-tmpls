@@ -4,6 +4,7 @@ import (
 	"math"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // D Convenient shorthand for map[string]any
@@ -25,43 +26,49 @@ type Page[T any] struct {
 	TotalPages    int
 	Size          int
 	Page          int
-	Search        string
 	Sorts         Sorts
 	URL           *url.URL
+	query         url.Values
 }
 
+// NewPage returns a new page from data, total items and paginator.
 func NewPage[T any](data []T, total int64, p Paginator) Page[T] {
 	return Page[T]{
 		Data:          data,
 		TotalElements: total,
 		TotalPages:    int(math.Ceil(float64(total) / float64(p.Size))),
 		Page:          p.Page,
-		Search:        p.Search,
 		Size:          p.Size,
 		Sorts:         p.Sorts,
 		URL:           p.URL,
+		query:         p.query,
 	}
 }
 
 func (p Page[T]) _dontImplThisInterface() {
 }
 
+// HasNext return whether this is the last page.
 func (p Page[T]) HasNext() bool {
 	return p.Page < p.TotalPages
 }
 
+// CurrentPage return the current page number.
 func (p Page[T]) CurrentPage() int {
 	return p.Page
 }
 
+// ElementsPerPage return the page size.
 func (p Page[T]) ElementsPerPage() int {
 	return p.Size
 }
 
+// HasPrevious return whether this is the first page.
 func (p Page[T]) HasPrevious() bool {
 	return p.Page > 1
 }
 
+// NextPage return the next page number, or current page if it is the last page.
 func (p Page[T]) NextPage() int {
 	if !p.HasNext() {
 		return p.Page
@@ -69,6 +76,7 @@ func (p Page[T]) NextPage() int {
 	return p.Page + 1
 }
 
+// PreviousPage return the next page number, or current page if it is the first page.
 func (p Page[T]) PreviousPage() int {
 	if !p.HasPrevious() {
 		return p.Page
@@ -76,18 +84,22 @@ func (p Page[T]) PreviousPage() int {
 	return p.Page - 1
 }
 
+// PathToNext return the url to the next page.
 func (p Page[T]) PathToNext() string {
 	return p.PathToPage(p.NextPage())
 }
 
+// PathToPrevious return the url to the previous page.
 func (p Page[T]) PathToPrevious() string {
 	return p.PathToPage(p.PreviousPage())
 }
 
+// PathToFirst return the url to the first page.
 func (p Page[T]) PathToFirst() string {
 	return p.PathToPage(FirstPageNumber)
 }
 
+// PathToLast return the url to the last page.
 func (p Page[T]) PathToLast() string {
 	return p.PathToPage(p.TotalPages)
 }
@@ -135,24 +147,23 @@ func (p Page[T]) PathToSort(sorts ...string) string {
 	return p.URL.Path
 }
 
-// PathToSearch returns the URL path for the given search.
-// Changing search will reset the page to 1 and unset the sort.
-func (p Page[T]) PathToSearch(search string) string {
+// PathToQueryParam returns the URL path for to the given query param.
+// Changing to query param will reset the page to 1 and unset the sort.
+// The query param will be replaced.
+func (p Page[T]) PathToQueryParam(param string, values ...string) string {
 	query := p.URL.Query()
 	query.Del(ParamPage)
 	query.Del(ParamSort)
 	query.Del(ParamSearch)
-	if search != "" {
-		query.Set(ParamSearch, search)
-	}
+	query[param] = values
 	if q := query.Encode(); q != "" {
 		return p.URL.Path + "?" + q
 	}
 	return p.URL.Path
 }
 
-// PathWithParam returns the URL path with additional query param appended.
-func (p Page[T]) PathWithParam(param string, values ...string) string {
+// PathWithQueryParam returns the URL path with additional query param appended.
+func (p Page[T]) PathWithQueryParam(param string, values ...string) string {
 	query := p.URL.Query()
 	if _, ok := query[param]; !ok {
 		query[param] = make([]string, 0, len(values))
@@ -171,4 +182,20 @@ func (p Page[T]) PathWithQuery(queryString string) string {
 		return p.URL.Path + "?" + queryString
 	}
 	return p.URL.Path + "?" + query + "&" + queryString
+}
+
+// Query return given query param value.
+func (p Page[T]) Query(name string) string {
+	return p.query.Get(name)
+}
+
+// Search return value of ParamSearch query param, trimmed.
+func (p Page[T]) Search() string {
+	return strings.TrimSpace(p.Query(ParamSearch))
+}
+
+// Offset return the page item offset, useful for building the database query.
+// For Limit use Size.
+func (p Page[T]) Offset() string {
+	return strings.TrimSpace(p.Query(ParamSearch))
 }

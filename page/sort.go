@@ -2,6 +2,8 @@ package page
 
 import "strings"
 
+// NewSorts returns new sorts from string slice.
+// Sort starts with minus sign will sort in descending order.
 func NewSorts(sorts ...string) Sorts {
 	if len(sorts) == 0 {
 		return nil
