@@ -36,7 +36,7 @@ func NewPage[T any](data []T, total int64, p Paginator) Page[T] {
 	return Page[T]{
 		Data:          data,
 		TotalElements: total,
-		TotalPages:    int(math.Ceil(float64(total) / float64(p.Size))),
+		TotalPages:    max(int(math.Ceil(float64(total)/float64(p.Size))), 1),
 		Page:          p.Page,
 		Size:          p.Size,
 		Sorts:         p.Sorts,
