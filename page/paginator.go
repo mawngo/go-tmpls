@@ -20,10 +20,15 @@ const (
 )
 
 type Paginator struct {
-	Size  int
-	Page  int
+	// Size the size of page.
+	Size int
+	// Page the page number, start from 1.
+	Page int
+	// Sorts the parsed sort queries.
 	Sorts Sorts
-	URL   *url.URL
+	// URL request URL.
+	URL *url.URL
+	// query request query params.
 	query url.Values
 }
 

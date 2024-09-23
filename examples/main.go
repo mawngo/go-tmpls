@@ -26,16 +26,18 @@ func main() {
 	}
 
 	// Setup template cache and http.FileServer from root, which is embedded when dev mode is disabled.
+	// You can use StandardTemplateFS to create the TemplateCache only,
+	// or NewTemplateCache(fs, options...) to create template cache if you want to use another directory for template.
 	cache, static, err := tmpls.StandardWebFS(root,
 		tmpls.WithNocache(*devmode),            // Disable cache in dev mode, so we can see changes without re-run the project.
-		tmpls.WithGlobs("components/*.gohtml")) // Include all files in components.
+		tmpls.WithGlobs("components/*.gohtml")) // Include all files in components by default. Those files can be referenced in using base name.
 	if err != nil {
 		panic(err)
 	}
 
 	http.Handle("GET /static/", http.StripPrefix("/static/", static))
 	http.HandleFunc("GET /", func(res http.ResponseWriter, req *http.Request) {
-		// Paging demonstration.
+		// Paging demonstration, just empty data.
 		p := page.NewPage[any](make([]any, page.DefaultPageSize), page.DefaultPageSize*10, page.NewPaginator(req))
 
 		cache.MustExecute(res,

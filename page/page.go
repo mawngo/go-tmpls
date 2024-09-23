@@ -21,14 +21,22 @@ type Pageable interface {
 }
 
 type Page[T any] struct {
-	Data          []T
+	// Data items of page.
+	Data []T
+	// TotalElements total number items.
 	TotalElements int64
-	TotalPages    int
-	Size          int
-	Page          int
-	Sorts         Sorts
-	URL           *url.URL
-	query         url.Values
+	// TotalPages total/maximum number of page
+	TotalPages int
+	// Size the size of page.
+	Size int
+	// Page the page number, start from 1.
+	Page int
+	// Sorts the parsed sort queries.
+	Sorts Sorts
+	// URL request URL.
+	URL *url.URL
+	// query request query params.
+	query url.Values
 }
 
 // NewPage returns a new page from data, total items and paginator.

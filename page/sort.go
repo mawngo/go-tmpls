@@ -27,12 +27,14 @@ func NewSorts(sorts ...string) Sorts {
 	return parseds
 }
 
+// Sorts list of sort queries.
 type Sorts []string
 
 func (s Sorts) String() string {
 	return strings.Join(s, ", ")
 }
 
+// Label return title-cased sort with direction replaced by arrow.
 func (s Sorts) Label() string {
 	if len(s) == 0 {
 		return ""

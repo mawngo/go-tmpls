@@ -14,19 +14,7 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 		"dict":   dict,
 		"dig":    dig,
 		"strval": strval,
-		"N": func(n int, v ...any) []any {
-			arr := make([]any, 0, n)
-			if len(v) == 0 {
-				for i := 0; i < n; i++ {
-					arr = append(arr, i)
-				}
-				return arr
-			}
-			for i := 0; i < n; i++ {
-				arr = append(arr, v[0])
-			}
-			return arr
-		},
+		"N":      N,
 		"add": func(i ...int) int {
 			a := 0
 			for _, b := range i {
@@ -47,6 +35,23 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 	return builtin
 }
 
+// N create a pseudo slice for range over number in template.
+// The second parameter v can be used for preserving the dot type.
+func N(n int, v ...any) []any {
+	arr := make([]any, 0, n)
+	if len(v) == 0 {
+		for i := 0; i < n; i++ {
+			arr = append(arr, i)
+		}
+		return arr
+	}
+	for i := 0; i < n; i++ {
+		arr = append(arr, v[0])
+	}
+	return arr
+}
+
+// strval convert value to string.
 func strval(v any) string {
 	switch v := v.(type) {
 	case string:
@@ -62,6 +67,7 @@ func strval(v any) string {
 	}
 }
 
+// date format time, default format is time.DateOnly.
 func date(v time.Time, format ...string) string {
 	if len(format) == 0 {
 		return v.Format(time.DateOnly)
@@ -69,6 +75,7 @@ func date(v time.Time, format ...string) string {
 	return v.Format(format[0])
 }
 
+// datetime format time, default format is time.DateTime.
 func datetime(v time.Time, format ...string) string {
 	if len(format) == 0 {
 		return v.Format(time.DateTime)
@@ -76,7 +83,8 @@ func datetime(v time.Time, format ...string) string {
 	return v.Format(format[0])
 }
 
-// dict https://github.com/Masterminds/sprig
+// dict https://github.com/Masterminds/sprig.
+// Creating dictionaries is done by calling the dict function and passing it a list of pairs.
 func dict(v ...any) map[string]any {
 	dict := map[string]any{}
 	lenv := len(v)
@@ -91,6 +99,8 @@ func dict(v ...any) map[string]any {
 	return dict
 }
 
+// dig traverses a nested set of dicts, selecting keys from a list of values.
+// It returns a default value if any of the keys are not found at the associated dict.
 func dig(ps ...any) (any, error) {
 	if len(ps) < 3 {
 		panic("dig needs at least three arguments")

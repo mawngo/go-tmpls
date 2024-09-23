@@ -15,7 +15,7 @@ import (
 type TemplateCache struct {
 	fs      fs.FS
 	cache   cache.Cache[*template.Template]
-	base    *template.Template
+	baseFn  func() (*template.Template, error)
 	mu      sync.RWMutex
 	nocache bool
 }
@@ -71,6 +71,7 @@ func WithoutBuiltins(funcNames ...string) TemplateCacheOption {
 	}
 }
 
+// NewTemplateCache create a TemplateCache from specified filesystem.
 func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache, error) {
 	opt := templateCacheOptions{
 		nocache: false,
@@ -88,6 +89,7 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache,
 	if len(opt.funcs) > 0 {
 		base = base.Funcs(opt.funcs)
 	}
+
 	if len(opt.globs) > 0 {
 		var err error
 		base, err = base.ParseFS(fs, opt.globs...)
@@ -96,14 +98,37 @@ func NewTemplateCache(fs fs.FS, options ...TemplateCacheOption) (*TemplateCache,
 		}
 	}
 
+	var baseFn func() (*template.Template, error)
+	if opt.nocache {
+		baseFn = func() (*template.Template, error) {
+			clone, err := base.Clone()
+			if err != nil {
+				return nil, err
+			}
+			return clone.ParseFS(fs, opt.globs...)
+		}
+	} else {
+		if len(opt.globs) > 0 {
+			var err error
+			base, err = base.ParseFS(fs, opt.globs...)
+			if err != nil {
+				return nil, err
+			}
+		}
+		baseFn = func() (*template.Template, error) {
+			return base.Clone()
+		}
+	}
+
 	return &TemplateCache{
 		fs:      fs,
 		cache:   opt.cache,
-		base:    base,
+		baseFn:  baseFn,
 		nocache: opt.nocache,
 	}, nil
 }
 
+// MustNewTemplateCache See NewTemplateCache.
 func MustNewTemplateCache(fs fs.FS, options ...TemplateCacheOption) *TemplateCache {
 	c, err := NewTemplateCache(fs, options...)
 	if err != nil {
@@ -112,11 +137,13 @@ func MustNewTemplateCache(fs fs.FS, options ...TemplateCacheOption) *TemplateCac
 	return c
 }
 
+// MustParse See [TemplateCache.Parse].
 func (t *TemplateCache) MustParse(file string, globs ...string) *template.Template {
 	return template.Must(t.Parse(file, globs...))
 }
 
-// Parse will parse the template and cache it.
+// Parse will parse the template and cache it, the template returned from this method is not cloned,
+// aAny change to the returned template will affect the cache.
 func (t *TemplateCache) Parse(file string, globs ...string) (*template.Template, error) {
 	if t.nocache {
 		return t.parse(file, globs...)
@@ -160,7 +187,7 @@ func (t *TemplateCache) Parse(file string, globs ...string) (*template.Template,
 }
 
 func (t *TemplateCache) parse(file string, globs ...string) (*template.Template, error) {
-	clone, err := t.base.Clone()
+	clone, err := t.baseFn()
 	if err != nil {
 		return nil, err
 	}
@@ -170,10 +197,13 @@ func (t *TemplateCache) parse(file string, globs ...string) (*template.Template,
 	return template.Must(clone.New(file).ParseFS(t.fs, file)).ParseFS(t.fs, globs...)
 }
 
+// MustClone See [TemplateCache.Clone].
 func (t *TemplateCache) MustClone(file string, globs ...string) *template.Template {
 	return template.Must(t.Clone(file, globs...))
 }
 
+// Clone parse and return cloned template.
+// See [template.Template.Clone].
 func (t *TemplateCache) Clone(file string, globs ...string) (*template.Template, error) {
 	tmpl, err := t.Parse(file, globs...)
 	if err != nil {
@@ -182,6 +212,7 @@ func (t *TemplateCache) Clone(file string, globs ...string) (*template.Template,
 	return tmpl.Clone()
 }
 
+// MustExecute See [TemplateCache.Execute].
 func (t *TemplateCache) MustExecute(wr io.Writer, data any, file string, globs ...string) {
 	err := t.Execute(wr, data, file, globs...)
 	if err != nil {
@@ -189,6 +220,8 @@ func (t *TemplateCache) MustExecute(wr io.Writer, data any, file string, globs .
 	}
 }
 
+// Execute parse and execute the template file.
+// See [template.Template.ExecuteTemplate].
 func (t *TemplateCache) Execute(wr io.Writer, data any, file string, globs ...string) error {
 	tmpl, err := t.Parse(file, globs...)
 	if err != nil {
@@ -197,14 +230,37 @@ func (t *TemplateCache) Execute(wr io.Writer, data any, file string, globs ...st
 	return tmpl.ExecuteTemplate(wr, file, data)
 }
 
-func (t *TemplateCache) MustExecuteTemplate(wr io.Writer, name string, data any, file string, globs ...string) {
-	err := t.ExecuteTemplate(wr, name, data, file, globs...)
+func (t *TemplateCache) executeBase(wr io.Writer, name string, data any) error {
+	tmpl, err := t.baseFn()
+	if err != nil {
+		return err
+	}
+	return tmpl.ExecuteTemplate(wr, name, data)
+}
+
+// MustExecuteTemplate See [TemplateCache.ExecuteTemplate].
+func (t *TemplateCache) MustExecuteTemplate(wr io.Writer, name string, data any, globs ...string) {
+	err := t.ExecuteTemplate(wr, name, data, globs...)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (t *TemplateCache) ExecuteTemplate(wr io.Writer, name string, data any, file string, globs ...string) error {
+// ExecuteTemplate is a variant of [TemplateCache.Execute] that accepts template name instead of files, which
+// allows executing on base template generated by TemplateCache.baseFn.
+// If both name and globs were passed, then it behaves like [TemplateCache.Execute]
+func (t *TemplateCache) ExecuteTemplate(wr io.Writer, name string, data any, globs ...string) error {
+	if len(globs) == 0 {
+		// Execute directly on base if no globs are provided.
+		return t.executeBase(wr, name, data)
+	}
+
+	file := globs[0]
+	if len(globs) > 1 {
+		globs = globs[1:]
+	} else {
+		globs = nil
+	}
 	tmpl, err := t.Parse(file, globs...)
 	if err != nil {
 		return err
