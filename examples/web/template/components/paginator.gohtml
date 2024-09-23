@@ -1,0 +1,22 @@
+<nav class="pagination is-centered is-justify-content-center" role="navigation" aria-label="pagination">
+    {{ if .HasPrevious }}
+        <a class="pagination-previous" href="{{ .PathToFirst }}">First</a>
+        <a class="pagination-previous" href="{{ .PathToPrevious }}">Prev</a>
+    {{ else }}
+        <a class="pagination-previous" disabled>First</a>
+        <a class="pagination-previous" disabled>Prev</a>
+    {{ end }}
+
+    {{ if .HasNext }}
+        <a class="pagination-next" href="{{ .PathToNext }}">Next</a>
+        <a class="pagination-next" href="{{ .PathToLast }}">Last</a>
+    {{ else }}
+        <a class="pagination-next" disabled>Next</a>
+        <a class="pagination-next" disabled>Last</a>
+    {{ end }}
+    <ul class="pagination-list is-flex-grow-0">
+        <li>
+            <a class="pagination-link is-current" aria-current="page">{{ .CurrentPage }}</a>
+        </li>
+    </ul>
+</nav>

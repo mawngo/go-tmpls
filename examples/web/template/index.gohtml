@@ -4,4 +4,17 @@
     <h1 class="title m-6">
         {{ template "hello.gohtml" . }}
     </h1>
+    <div class="block">
+        <a href="{{ .Page.PathToSort "-name" }}">Sort Name Desc</a>
+        <span> - </span>
+        <a href="{{ .Page.PathToSort "name" }}">Sort Name Asc</a>
+    </div>
+    <div class="block">
+        <a href="{{ .Page.PathToSize 12 }}">Size 12</a>
+        <span> - </span>
+        <a href="{{ .Page.PathToSize 24 }}">Size 24</a>
+        <span> - </span>
+        <a href="{{ .Page.PathToSize 48 }}">Size 48</a>
+    </div>
+    {{ template "paginator.gohtml" .Page }}
 {{ end }}

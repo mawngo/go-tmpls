@@ -35,8 +35,11 @@ func main() {
 
 	http.Handle("GET /static/", http.StripPrefix("/static/", static))
 	http.HandleFunc("GET /", func(res http.ResponseWriter, req *http.Request) {
+		// Paging demonstration.
+		p := page.NewPage[any](make([]any, page.DefaultPageSize), page.DefaultPageSize*10, page.NewPaginator(req))
+
 		cache.MustExecute(res,
-			page.D{"Name": *name},
+			page.D{"Name": *name, "Page": p},
 			"index.gohtml",
 			"layouts/base.gohtml")
 	})
