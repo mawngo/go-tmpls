@@ -1,14 +1,12 @@
 package tmpls
 
 import (
-	"embed"
 	"github.com/mawngo/go-tmpls/cache"
 	"github.com/mawngo/go-tmpls/internal"
 	"html/template"
 	"io"
 	"io/fs"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 )
@@ -258,22 +256,11 @@ func (t *TemplateCache) ExecuteTemplate(wr io.Writer, name string, data any, glo
 
 // StandardWebFS setup TemplateCache and http.FileServer based on golang-standards/project-layout,
 // which read template from web/template and serve static files static from web/static.
-// If local is true, it will read files from local web/ directory for live reload, otherwise it will read files from the embed.FS.
-// This method is experimental.
-func StandardWebFS(embed embed.FS, local bool, options ...TemplateCacheOption) (*TemplateCache, http.Handler, error) {
-	fileSystem, err := fs.Sub(embed, "web")
+func StandardWebFS(cwd fs.FS, options ...TemplateCacheOption) (*TemplateCache, http.Handler, error) {
+	fileSystem, err := fs.Sub(cwd, "web")
 	if err != nil {
 		return nil, nil, err
 	}
-
-	if local {
-		if _, err := os.Stat("web"); err != nil {
-			return nil, nil, err
-		}
-		fileSystem = os.DirFS("web")
-		options = append(options, WithNocache(true))
-	}
-
 	staticFs, err := fs.Sub(fileSystem, "static")
 	if err != nil {
 		return nil, nil, err
@@ -290,38 +277,17 @@ func StandardWebFS(embed embed.FS, local bool, options ...TemplateCacheOption) (
 	return templateCache, http.FileServer(http.FS(staticFs)), nil
 }
 
-// TemplateFS returns a fs.FS that point to web/template directory.
-// If local is true, it will read files from local web/ directory for live reload,
-// otherwise it will read files from the embed.FS.
-func TemplateFS(embed embed.FS, local bool) (fs.FS, error) {
-	fileSystem, err := fs.Sub(embed, "web")
+// StandardTemplateFS returns TemplateCache based on golang-standards/project-layout,
+// which read template from web/template.
+func StandardTemplateFS(cwd fs.FS, options ...TemplateCacheOption) (*TemplateCache, error) {
+	fileSystem, err := fs.Sub(cwd, "web")
 	if err != nil {
 		return nil, err
 	}
 
-	if local {
-		if _, err := os.Stat("web"); err != nil {
-			return nil, err
-		}
-		fileSystem = os.DirFS("web")
-	}
-	return fs.Sub(fileSystem, "template")
-}
-
-// StaticFS returns a fs.FS that point to web/static directory.
-// If local is true, it will read files from local web/ directory for live reload,
-// otherwise it will read files from the embed.FS.
-func StaticFS(embed embed.FS, local bool) (fs.FS, error) {
-	fileSystem, err := fs.Sub(embed, "web")
+	templateFs, err := fs.Sub(fileSystem, "template")
 	if err != nil {
 		return nil, err
 	}
-
-	if local {
-		if _, err := os.Stat("web"); err != nil {
-			return nil, err
-		}
-		fileSystem = os.DirFS("web")
-	}
-	return fs.Sub(fileSystem, "static")
+	return NewTemplateCache(templateFs, options...)
 }

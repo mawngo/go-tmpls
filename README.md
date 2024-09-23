@@ -1,6 +1,6 @@
 # Go Templates
 
-Template caching and utilities. Require go 1.21+
+Template caching and utilities. Require go 1.22+
 
 ## Usage
 
