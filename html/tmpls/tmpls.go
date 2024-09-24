@@ -16,7 +16,7 @@ type TemplateCache struct {
 	fs      fs.FS
 	cache   cache.Cache[*template.Template]
 	baseFn  func() (*template.Template, error)
-	mu      sync.RWMutex
+	mu      sync.Mutex
 	nocache bool
 }
 
@@ -153,31 +153,17 @@ func (t *TemplateCache) Parse(file string, globs ...string) (*template.Template,
 		name += ":" + strings.Join(globs, ",")
 	}
 
-	t.mu.RLock()
 	if tmpl, ok := t.cache.Get(name); ok {
-		defer t.mu.RUnlock()
-		return tmpl, nil
-	}
-	t.mu.RUnlock()
-
-	if t.mu.TryLock() {
-		defer t.mu.Unlock()
-		tmpl, err := t.parse(file, globs...)
-		if err != nil {
-			return nil, err
-		}
-		t.cache.Set(name, tmpl)
 		return tmpl, nil
 	}
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	// Some other thread should have parsed the template already.
+	// Some other thread may have parsed the template already.
 	if tmpl, ok := t.cache.Get(name); ok {
 		return tmpl, nil
 	}
-
-	// This is weird, should never happen.
+	// If we are the first one to arrive, then do the work.
 	tmpl, err := t.parse(file, globs...)
 	if err != nil {
 		return nil, err
