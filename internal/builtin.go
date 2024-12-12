@@ -28,6 +28,7 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 		"title":    strings.ToTitle,
 		"date":     date,
 		"datetime": datetime,
+		"ternary":  ternary,
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
@@ -125,4 +126,15 @@ func digFromDict(dict map[string]any, d any, ks []string) (any, error) {
 		return step, nil
 	}
 	return digFromDict(step.(map[string]any), d, ns)
+}
+
+// ternary returns the first value if the last value is true, otherwise returns the second value.
+// true | ternary "b" "c" => "b"
+// false | ternary "b" "c" => "c"
+func ternary(vt any, vf any, v bool) any {
+	if v {
+		return vt
+	}
+
+	return vf
 }
