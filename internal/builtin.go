@@ -25,6 +25,9 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 			return sum
 		},
 		"sub": func(a, b any) int { return toInt(a) - toInt(b) },
+		"div": func(a, b any) int {
+			return toInt(a) / toInt(b)
+		},
 		"mul": func(a any, i ...any) int {
 			total := toInt(a)
 			for _, b := range i {
