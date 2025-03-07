@@ -22,13 +22,17 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 			}
 			return a
 		},
-		"sub":      func(a, b int) int { return a - b },
-		"mul":      func(a, b int) int { return a * b },
-		"upper":    strings.ToUpper,
-		"lower":    strings.ToLower,
-		"title":    strings.ToTitle,
-		"min":      min,
-		"max":      max,
+		"sub":   func(a, b int) int { return a - b },
+		"mul":   func(a, b int) int { return a * b },
+		"upper": strings.ToUpper,
+		"lower": strings.ToLower,
+		"title": strings.ToTitle,
+		"min": func(a int, b ...int) int {
+			return min(a, b...)
+		},
+		"max": func(a int, b ...int) int {
+			return max(a, b...)
+		},
 		"date":     date,
 		"datetime": datetime,
 		"ternary":  ternary,
