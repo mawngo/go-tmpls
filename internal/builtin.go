@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"text/template"
 	"time"
@@ -15,24 +16,39 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 		"dig":    dig,
 		"strval": strval,
 		"N":      N,
-		"add": func(i ...int) int {
-			a := 0
+		"int":    toInt,
+		"add": func(a any, i ...any) int {
+			sum := toInt(a)
 			for _, b := range i {
-				a += b
+				sum += toInt(b)
 			}
-			return a
+			return sum
 		},
-		"sub":   func(a, b int) int { return a - b },
-		"mul":   func(a, b int) int { return a * b },
-		"upper": strings.ToUpper,
-		"lower": strings.ToLower,
-		"title": strings.ToTitle,
-		"min": func(a int, b int) int {
-			return min(a, b)
+		"sub": func(a, b any) int { return toInt(a) - toInt(b) },
+		"mul": func(a any, i ...any) int {
+			total := toInt(a)
+			for _, b := range i {
+				total *= toInt(b)
+			}
+			return total
 		},
-		"max": func(a int, b int) int {
-			return max(a, b)
+		"min": func(a any, i ...any) int {
+			m := toInt(a)
+			for _, b := range i {
+				m = min(m, toInt(b))
+			}
+			return m
 		},
+		"max": func(a any, i ...any) int {
+			m := toInt(a)
+			for _, b := range i {
+				m = max(m, toInt(b))
+			}
+			return m
+		},
+		"upper":    strings.ToUpper,
+		"lower":    strings.ToLower,
+		"title":    strings.ToTitle,
 		"date":     date,
 		"datetime": datetime,
 		"ternary":  ternary,
@@ -144,4 +160,60 @@ func ternary(vt any, vf any, v bool) any {
 	}
 
 	return vf
+}
+
+// From html/template/content.go
+// indirect returns the value, after dereferencing as many times
+// as necessary to reach the base type (or nil).
+func indirect(a interface{}) interface{} {
+	if a == nil {
+		return nil
+	}
+	if t := reflect.TypeOf(a); t.Kind() != reflect.Ptr {
+		// Avoid creating a reflect.Value if it's not a pointer.
+		return a
+	}
+	v := reflect.ValueOf(a)
+	for v.Kind() == reflect.Ptr && !v.IsNil() {
+		v = v.Elem()
+	}
+	return v.Interface()
+}
+
+func toInt(i any) int {
+	i = indirect(i)
+	switch s := i.(type) {
+	case int:
+		return s
+	case time.Weekday:
+		return int(s)
+	case time.Month:
+		return int(s)
+	case int64:
+		return int(s)
+	case int32:
+		return int(s)
+	case int16:
+		return int(s)
+	case int8:
+		return int(s)
+	case uint:
+		return int(s)
+	case uint64:
+		return int(s)
+	case uint32:
+		return int(s)
+	case uint16:
+		return int(s)
+	case uint8:
+		return int(s)
+	case float64:
+		return int(s)
+	case float32:
+		return int(s)
+	case nil:
+		return 0
+	default:
+		panic(fmt.Errorf("unable to cast %#v of type %T to int", i, i))
+	}
 }
