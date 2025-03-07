@@ -23,6 +23,7 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 			return a
 		},
 		"sub":      func(a, b int) int { return a - b },
+		"mul":      func(a, b int) int { return a * b },
 		"upper":    strings.ToUpper,
 		"lower":    strings.ToLower,
 		"title":    strings.ToTitle,
