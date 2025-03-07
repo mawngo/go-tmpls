@@ -27,11 +27,11 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 		"upper": strings.ToUpper,
 		"lower": strings.ToLower,
 		"title": strings.ToTitle,
-		"min": func(a int, b ...int) int {
-			return min(a, b...)
+		"min": func(a int, b int) int {
+			return min(a, b)
 		},
-		"max": func(a int, b ...int) int {
-			return max(a, b...)
+		"max": func(a int, b int) int {
+			return max(a, b)
 		},
 		"date":     date,
 		"datetime": datetime,
