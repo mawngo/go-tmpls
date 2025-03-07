@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// D Convenient shorthand for map[string]any
+// D Convenient shorthand for map[string]any.
 type D map[string]any
 
 type Pageable interface {

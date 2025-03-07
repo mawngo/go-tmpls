@@ -152,8 +152,8 @@ func digFromDict(dict map[string]any, d any, ks []string) (any, error) {
 }
 
 // ternary returns the first value if the last value is true, otherwise returns the second value.
-// true | ternary "b" "c" => "b"
-// false | ternary "b" "c" => "c"
+// true | ternary "b" "c" => "b".
+// false | ternary "b" "c" => "c".
 func ternary(vt any, vf any, v bool) any {
 	if v {
 		return vt
