@@ -27,6 +27,8 @@ func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
 		"upper":    strings.ToUpper,
 		"lower":    strings.ToLower,
 		"title":    strings.ToTitle,
+		"min":      min,
+		"max":      max,
 		"date":     date,
 		"datetime": datetime,
 		"ternary":  ternary,
