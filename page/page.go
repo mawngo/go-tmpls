@@ -1,6 +1,7 @@
 package page
 
 import (
+	"github.com/mawngo/go-tmpls/page/simplepage"
 	"math"
 	"net/url"
 	"strconv"
@@ -22,18 +23,7 @@ type Pageable interface {
 }
 
 type Page[T any] struct {
-	// Data items of page.
-	Data []T
-	// TotalElements total number items.
-	TotalElements int64
-	// TotalPages total/maximum number of page
-	TotalPages int
-	// Size the size of page.
-	Size int
-	// Page the page number, start from 1.
-	Page int
-	// Sorts the parsed sort queries.
-	Sorts Sorts
+	simplepage.Page[T]
 	// URL request URL.
 	URL *url.URL
 	// query request query params.
@@ -43,14 +33,16 @@ type Page[T any] struct {
 // NewPage returns a new page from data, total items and paginator.
 func NewPage[T any](data []T, total int64, p Paginator) Page[T] {
 	return Page[T]{
-		Data:          data,
-		TotalElements: total,
-		TotalPages:    max(int(math.Ceil(float64(total)/float64(p.Size))), 1),
-		Page:          p.Page,
-		Size:          p.Size,
-		Sorts:         p.Sorts,
-		URL:           p.URL,
-		query:         p.query,
+		Page: simplepage.Page[T]{
+			Data:          data,
+			TotalElements: total,
+			TotalPages:    max(int(math.Ceil(float64(total)/float64(p.Size))), 1),
+			PageNumber:    p.PageNumber,
+			Size:          p.Size,
+			Sorts:         p.Sorts,
+		},
+		URL:   p.URL,
+		query: p.query,
 	}
 }
 
@@ -59,12 +51,12 @@ func (p Page[T]) _dontImplThisInterface() {
 
 // HasNext return whether this is the last page.
 func (p Page[T]) HasNext() bool {
-	return p.Page < p.TotalPages
+	return p.PageNumber < p.TotalPages
 }
 
 // CurrentPage return the current page number.
 func (p Page[T]) CurrentPage() int {
-	return p.Page
+	return p.PageNumber
 }
 
 // ElementsPerPage return the page size.
@@ -74,23 +66,23 @@ func (p Page[T]) ElementsPerPage() int {
 
 // HasPrevious return whether this is the first page.
 func (p Page[T]) HasPrevious() bool {
-	return p.Page > 1
+	return p.PageNumber > 1
 }
 
 // NextPage return the next page number, or current page if it is the last page.
 func (p Page[T]) NextPage() int {
 	if !p.HasNext() {
-		return p.Page
+		return p.PageNumber
 	}
-	return p.Page + 1
+	return p.PageNumber + 1
 }
 
 // PreviousPage return the next page number, or current page if it is the first page.
 func (p Page[T]) PreviousPage() int {
 	if !p.HasPrevious() {
-		return p.Page
+		return p.PageNumber
 	}
-	return p.Page - 1
+	return p.PageNumber - 1
 }
 
 // PathToNext return the url to the next page.

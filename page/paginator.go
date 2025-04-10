@@ -1,6 +1,7 @@
 package page
 
 import (
+	"github.com/mawngo/go-tmpls/page/simplepage"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -19,13 +20,9 @@ const (
 	ParamSearch = "q"
 )
 
+// Paginator represent a page request.
 type Paginator struct {
-	// Size the size of page.
-	Size int
-	// Page the page number, start from 1.
-	Page int
-	// Sorts the parsed sort queries.
-	Sorts Sorts
+	simplepage.Paginator
 	// URL request URL.
 	URL *url.URL
 	// query request query params.
@@ -45,9 +42,11 @@ func (p Paginator) Search() string {
 // NewDefaultPaginator returns new paginator with default values.
 func NewDefaultPaginator(url *url.URL, sorts ...string) Paginator {
 	return Paginator{
-		Page:  FirstPageNumber,
-		Size:  DefaultPageSize,
-		Sorts: NewSorts(sorts...),
+		Paginator: simplepage.Paginator{
+			PageNumber: FirstPageNumber,
+			Size:       DefaultPageSize,
+			Sorts:      simplepage.NewSorts(sorts...),
+		},
 		query: url.Query(),
 		URL:   url,
 	}
@@ -59,7 +58,7 @@ func NewPaginator(req *http.Request, sorts ...string) Paginator {
 	query := p.query
 	if page := query.Get(ParamPage); page != "" {
 		if pageNumber, err := strconv.Atoi(page); err == nil {
-			p.Page = max(pageNumber, FirstPageNumber)
+			p.PageNumber = max(pageNumber, FirstPageNumber)
 		}
 	}
 	if size := query.Get(ParamSize); size != "" {
@@ -81,7 +80,7 @@ func NewPaginator(req *http.Request, sorts ...string) Paginator {
 		}
 	}
 	if len(s) > 0 {
-		p.Sorts = NewSorts(s...)
+		p.Sorts = simplepage.NewSorts(s...)
 	}
 	return p
 }
