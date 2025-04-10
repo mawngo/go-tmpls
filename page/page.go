@@ -207,6 +207,9 @@ func (p Page[T]) QParam(name string, searchParam string) string {
 	}
 	search := p.query.Get(searchParam)
 	param := name + ":"
+	if len(search) <= len(param) {
+		return ""
+	}
 	index := strings.Index(search, param) + len(param)
 	end := len(search)
 	for i := index; i < len(search); i++ {
