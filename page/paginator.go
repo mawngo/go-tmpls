@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -37,6 +38,25 @@ func (p Paginator) Query(name string) string {
 // Search return value of ParamSearch query param, trimmed.
 func (p Paginator) Search() string {
 	return strings.TrimSpace(p.Query(ParamSearch))
+}
+
+// QuerySearch return given query param value or its value inside searching under format <param>:<value>.
+func (p Paginator) QuerySearch(name string) string {
+	if q := p.Query(name); q != "" {
+		return q
+	}
+	search := p.query.Get(ParamSearch)
+	param := name + ":"
+	index := strings.Index(search, param) + len(param)
+	end := len(search)
+	for i := index; i < len(search); i++ {
+		r := search[i]
+		if unicode.IsSpace(rune(r)) {
+			end = i
+			break
+		}
+	}
+	return search[index:end]
 }
 
 // NewDefaultPaginator returns new paginator with default values.
