@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // D Convenient shorthand for map[string]any.
@@ -199,7 +200,26 @@ func (p Page[T]) Query(name string) string {
 
 // Search return value of ParamSearch query param, trimmed.
 func (p Page[T]) Search() string {
-	return strings.TrimSpace(p.Query(ParamSearch))
+	return strings.TrimSpace(p.query.Get(ParamSearch))
+}
+
+// QuerySearch return given query param value or its value inside searching under format <param>:<value>.
+func (p Page[T]) QuerySearch(name string) string {
+	if q := p.Query(name); q != "" {
+		return q
+	}
+	search := p.query.Get(ParamSearch)
+	param := name + ":"
+	index := strings.Index(search, param) + len(param)
+	end := len(search)
+	for i := index; i < len(search); i++ {
+		r := search[i]
+		if unicode.IsSpace(rune(r)) {
+			end = i
+			break
+		}
+	}
+	return search[index:end]
 }
 
 // Offset return the page item offset, useful for building the database query.
