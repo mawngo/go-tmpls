@@ -37,15 +37,20 @@ func (p Paginator) Query(name string) string {
 
 // Search return value of ParamSearch query param, trimmed.
 func (p Paginator) Search() string {
-	return strings.TrimSpace(p.Query(ParamSearch))
+	return strings.TrimSpace(p.query.Get(ParamSearch))
 }
 
-// QuerySearch return given query param value or its value inside searching under format <param>:<value>.
-func (p Paginator) QuerySearch(name string) string {
+// QSearch return given query param value or its value inside searching under format <param>:<value>.
+func (p Paginator) QSearch(name string) string {
+	return p.QParam(name, ParamSearch)
+}
+
+// QParam return given query param value or its value inside another param under format <param>:<value>.
+func (p Paginator) QParam(name string, searchParam string) string {
 	if q := p.Query(name); q != "" {
 		return q
 	}
-	search := p.query.Get(ParamSearch)
+	search := p.query.Get(searchParam)
 	param := name + ":"
 	index := strings.Index(search, param) + len(param)
 	end := len(search)

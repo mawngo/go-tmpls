@@ -195,12 +195,17 @@ func (p Page[T]) Search() string {
 	return strings.TrimSpace(p.query.Get(ParamSearch))
 }
 
-// QuerySearch return given query param value or its value inside searching under format <param>:<value>.
-func (p Page[T]) QuerySearch(name string) string {
+// QSearch return given query param value or its value inside searching under format <param>:<value>.
+func (p Page[T]) QSearch(name string) string {
+	return p.QParam(name, ParamSearch)
+}
+
+// QParam return given query param value or its value inside another param under format <param>:<value>.
+func (p Page[T]) QParam(name string, searchParam string) string {
 	if q := p.Query(name); q != "" {
 		return q
 	}
-	search := p.query.Get(ParamSearch)
+	search := p.query.Get(searchParam)
 	param := name + ":"
 	index := strings.Index(search, param) + len(param)
 	end := len(search)
