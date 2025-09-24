@@ -1,47 +1,141 @@
 package simplepage
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+	"unicode"
+)
 
-// NewSorts returns new sorts from string slice.
-// Sort starts with minus sign will sort in descending order.
-func NewSorts(sorts ...string) Sorts {
-	if len(sorts) == 0 {
+// Sort is the sorting metadata.
+type Sort struct {
+	Field  string `json:"field,omitempty"`
+	IsDesc bool   `json:"isDesc,omitempty"`
+}
+
+// FieldStrict return [Sort.Field] if it only contains
+// letter, number characters, dash, underscore and space.
+func (s Sort) FieldStrict() string {
+	for _, c := range s.Field {
+		if c == '_' || c == '-' || unicode.IsSpace(c) {
+			continue
+		}
+		if unicode.IsLetter(c) || unicode.IsDigit(c) {
+			continue
+		}
+		return ""
+	}
+	return s.Field
+}
+
+// NewSorts create a list of [Sort] from a list of string.
+// String starting with negative sign '-' indicate desc sort.
+// Optionally, starting with positive sign '+' indicate asc sort.
+func NewSorts(raw []string) []Sort {
+	if len(raw) == 0 {
 		return nil
 	}
-	parseds := make([]string, 0, len(sorts))
-	for _, sort := range sorts {
-		sort = strings.TrimSpace(sort)
-		if sort == "" {
+
+	sorts := make([]Sort, 0, len(raw))
+	for _, rawSort := range raw {
+		isDesc := false
+		if len(rawSort) > 1 {
+			switch rawSort[0] {
+			case '-':
+				isDesc = true
+				rawSort = rawSort[1:]
+			case '+':
+				rawSort = rawSort[1:]
+			}
+		}
+		if rawSort == "" {
 			continue
 		}
-		if strings.HasSuffix(sort, " desc") || strings.HasSuffix(sort, " asc") {
-			parseds = append(parseds, sort)
-			continue
-		}
-		if sort[0] == '-' {
-			parseds = append(parseds, sort[1:]+" desc")
-			continue
-		}
-		parseds = append(parseds, sort+" asc")
+		sorts = append(sorts, Sort{Field: rawSort, IsDesc: isDesc})
 	}
-	return parseds
+	return sorts
 }
 
-// Sorts list of sort queries.
-type Sorts []string
+// Sorts is a list of [Sort], with custom binding logic.
+// You should use []Sort directly, except for binding.
+type Sorts []Sort
 
+// UnmarshalText support coma separated list.
+func (s *Sorts) UnmarshalText(text []byte) error {
+	sorts := strings.Split(string(text), ",")
+	*s = NewSorts(sorts)
+	return nil
+}
+
+// UnmarshalParam support coma separated list.
+func (s *Sorts) UnmarshalParam(param string) error {
+	sorts := strings.Split(param, ",")
+	*s = NewSorts(sorts)
+	return nil
+}
+
+// UnmarshalJSON support coma separated list string or array of string.
+func (s *Sorts) UnmarshalJSON(b []byte) error {
+	data := string(b)
+	if data == "null" {
+		return nil
+	}
+
+	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
+		data = data[len(`"`) : len(data)-len(`"`)]
+		return s.UnmarshalParam(data)
+	}
+
+	var sorts []string
+	if err := json.Unmarshal(b, &sorts); err != nil {
+		return err
+	}
+	*s = NewSorts(sorts)
+	return nil
+}
+
+// String return SQL sort string representation.
+// Deprecated: this method is prone to SQL injection and should not be used. Will be removed in the future.
 func (s Sorts) String() string {
-	return strings.Join(s, ", ")
+	buff := strings.Builder{}
+	for i := 0; i < len(s); i++ {
+		if s[i].Field == "" {
+			continue
+		}
+		if i > 0 {
+			buff.WriteString(", ")
+		}
+
+		buff.WriteString(s[i].Field)
+		if s[i].IsDesc {
+			buff.WriteString(" DESC")
+		} else {
+			buff.WriteString(" ASC")
+		}
+	}
+	return buff.String()
 }
 
-// Label return title-cased sort with direction replaced by arrow.
+// Label return sort (field-strict) with direction indicated by arrow.
 func (s Sorts) Label() string {
 	if len(s) == 0 {
 		return ""
 	}
-	str := strings.Join(s, ", ")
-	str = strings.ReplaceAll(str, "_", " ")
-	str = strings.ReplaceAll(str, " desc", " ↓")
-	str = strings.ReplaceAll(str, " asc", " ↑")
-	return str
+	buff := strings.Builder{}
+	for i := 0; i < len(s); i++ {
+		field := s[i].FieldStrict()
+		if field == "" {
+			continue
+		}
+		if i > 0 {
+			buff.WriteString(", ")
+		}
+
+		buff.WriteString(strings.ReplaceAll(field, "_", " "))
+		if s[i].IsDesc {
+			buff.WriteString(" ↓")
+		} else {
+			buff.WriteString(" ↑")
+		}
+	}
+	return buff.String()
 }

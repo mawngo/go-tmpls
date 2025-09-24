@@ -77,7 +77,7 @@ func NewDefaultPaginator(url *url.URL, sorts ...string) Paginator {
 		Paginator: simplepage.Paginator{
 			PageNumber: FirstPageNumber,
 			Size:       DefaultPageSize,
-			Sorts:      simplepage.NewSorts(sorts...),
+			Sorts:      simplepage.NewSorts(sorts),
 		},
 		query: url.Query(),
 		URL:   url,
@@ -112,7 +112,7 @@ func NewPaginator(req *http.Request, sorts ...string) Paginator {
 		}
 	}
 	if len(s) > 0 {
-		p.Sorts = simplepage.NewSorts(s...)
+		p.Sorts = simplepage.NewSorts(s)
 	}
 	return p
 }
