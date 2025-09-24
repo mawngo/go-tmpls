@@ -255,7 +255,7 @@ func (t *TemplateCache) ExecuteTemplate(wr io.Writer, name string, data any, glo
 }
 
 // StandardWebFS setup TemplateCache and http.FileServer based on golang-standards/project-layout,
-// which read template from web/template and serve static files static from web/static.
+// which read template from web/template and serve static files from web/static.
 func StandardWebFS(cwd fs.FS, options ...TemplateCacheOption) (*TemplateCache, http.Handler, error) {
 	fileSystem, err := fs.Sub(cwd, "web")
 	if err != nil {
