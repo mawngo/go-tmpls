@@ -93,30 +93,33 @@ func (s *Sorts) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// String return SQL sort string representation.
-// Deprecated: this method is prone to SQL injection and should not be used. Will be removed in the future.
-func (s Sorts) String() string {
+// Label return sort with direction indicated by arrow.
+func (s Sorts) Label() string {
+	if len(s) == 0 {
+		return ""
+	}
 	buff := strings.Builder{}
 	for i := 0; i < len(s); i++ {
-		if s[i].Field == "" {
+		field := s[i].Field
+		if field == "" {
 			continue
 		}
 		if i > 0 {
 			buff.WriteString(", ")
 		}
 
-		buff.WriteString(s[i].Field)
+		buff.WriteString(strings.ReplaceAll(field, "_", " "))
 		if s[i].IsDesc {
-			buff.WriteString(" DESC")
+			buff.WriteString(" ↓")
 		} else {
-			buff.WriteString(" ASC")
+			buff.WriteString(" ↑")
 		}
 	}
 	return buff.String()
 }
 
-// Label return sort (field-strict) with direction indicated by arrow.
-func (s Sorts) Label() string {
+// LabelStrict return sort (field-strict) with direction indicated by arrow.
+func (s Sorts) LabelStrict() string {
 	if len(s) == 0 {
 		return ""
 	}
