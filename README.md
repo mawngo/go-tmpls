@@ -64,6 +64,8 @@ func main() {
 			page.DefaultPageSize*10,
 			page.NewPaginator(req))
 
+		// Execute template with data.
+		// This also sets the Content-Type header to text/html; charset=utf-8.
 		cache.MustExecute(res,
 			page.D{"Name": *name, "Page": p},
 			"index.gohtml",
@@ -75,6 +77,7 @@ func main() {
 		panic(err)
 	}
 }
+
 ```
 
 ## Template Caching
