@@ -213,6 +213,7 @@ func (t *TemplateCache) Execute(wr io.Writer, data any, file string, globs ...st
 	if err != nil {
 		return err
 	}
+	setContentType(wr)
 	return tmpl.ExecuteTemplate(wr, file, data)
 }
 
