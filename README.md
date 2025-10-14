@@ -5,7 +5,7 @@ Template caching and paging utilities. Require go 1.22+
 ## Installation
 
 ```shell
-go get github.com/mawngo/go-tmpls
+go get -u github.com/mawngo/go-tmpls
 ```
 ## Usage
 
