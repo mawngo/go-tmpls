@@ -1,12 +1,13 @@
 # Go Templates
 
-Template caching and paging utilities. Require go 1.22+
+Template caching and paging utilities. Require Go 1.25+
 
 ## Installation
 
 ```shell
 go get -u github.com/mawngo/go-tmpls
 ```
+
 ## Usage
 
 ```go
@@ -15,8 +16,8 @@ package main
 import (
 	"embed"
 	"flag"
-	"github.com/mawngo/go-tmpls/html/tmpls"
-	"github.com/mawngo/go-tmpls/page"
+	"github.com/mawngo/go-tmpls/v2"
+	"github.com/mawngo/go-tmpls/v2/page"
 	"io/fs"
 	"net/http"
 	"os"
@@ -37,22 +38,18 @@ func main() {
 		println("Dev mode enabled")
 	}
 
-	// Setup template cache and http.FileServer from root, 
+	// Setup template cache and http.FileServer from root,
 	// which is embedded when dev mode is disabled.
 	// You can use StandardTemplateFS to create the TemplateCache only,
-	// or NewTemplateCache(fs, options...) to create template cache 
+	// or NewTemplateCache(fs, options...) to create a template cache
 	// if you want to use another directory for template.
 	//
-	// StandardWebFS setup TemplateCache and http.FileServer 
+	// StandardWebFS set up TemplateCache and http.FileServer
 	// based on golang-standards/project-layout,
 	// which read template from web/template and serve static files from web/static.
-	cache, static, err := tmpls.StandardWebFS(root,
-		// Disable cache in dev mode,
-		// so we can see changes without re-run the project.
-		tmpls.WithNocache(*devmode),
-		// Include all files in components by default. 
-		// Those files can be referenced in using base name.
-		tmpls.WithGlobs("components/*.gohtml"))
+	cache, static, err := tmpls.NewStandardWebFS(root,
+		// Disable cache in dev mode, so we can see changes without re-run the project.
+		tmpls.WithNocache(*devmode))
 	if err != nil {
 		panic(err)
 	}
@@ -66,10 +63,8 @@ func main() {
 
 		// Execute template with data.
 		// This also sets the Content-Type header to text/html; charset=utf-8.
-		cache.MustExecute(res,
-			page.D{"Name": *name, "Page": p},
-			"index.gohtml",
-			"layouts/base.gohtml")
+		cache.MustExecuteTemplate(res,
+			"index", page.D{"Name": *name, "Page": p})
 	})
 
 	println("Serving at " + *addr)
@@ -77,36 +72,24 @@ func main() {
 		panic(err)
 	}
 }
-
 ```
 
 ## Template Caching
 
-Cache the template for re-execution without having to parse it again, support template reload for development.
+Templates are only parsed once and then cloned on each execution. Change to the template that has been parsed will not
+be visible until you rerun the project.
 
-See [examples](/examples/main.go) for setup and integrating template cache.
+Can be disabled by using `WithNocache(true)`.
 
 ### Built-in template functions
 
 By default, this library adds some [helpers](/internal/builtin.go) to the template.
-To disable all built-in functions use`WithoutBuiltins()`, or `WithoutBuiltins('fn1', 'fn2', ...)` to disable specific
-function.
+To disable all built-in functions use`WithoutBuiltinFuncs()`,
+or `WithoutBuiltinFuncs('fn1', 'fn2', ...)` to disable specific function.
 
 You can add custom funcs using `WithFuncs`.
-
-### Custom cache
-
-By default, this library uses a map to store all parsed templates, thus make them never expire. If you want expiration,
-use `WithCache(impl)` to provide your own `Cache[*template.Template]` implementation.
-
-### No cache
-
-When cache is enabled (default), change to the template that has been parsed will not be visible until you rerun the
-project (or the cache expired if you use custom cache implementation).
-
-Use `WithNocache(true)` to disable template cache, force template to parse again on each execution.
 
 ## Pagination
 
 This library provides a simple pagination implementation for using in template.
-See [page](/page) package and the [example](/examples).
+See the [page](/page) package and the [example](/examples).
