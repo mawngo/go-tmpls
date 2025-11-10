@@ -57,9 +57,11 @@ func main() {
 	http.Handle("GET /static/", http.StripPrefix("/static/", static))
 	http.HandleFunc("GET /", func(res http.ResponseWriter, req *http.Request) {
 		// Paging demonstration, just empty data.
-		p := page.NewPage[any](make([]any, page.DefaultPageSize),
+		p := page.NewPage[any](
+			page.NewPaging(req.URL),
+			make([]any, page.DefaultPageSize),
 			page.DefaultPageSize*10,
-			page.NewPaginator(req))
+		)
 
 		// Execute template with data.
 		// This also sets the Content-Type header to text/html; charset=utf-8.
@@ -81,9 +83,12 @@ be visible until you rerun the project.
 
 Can be disabled by using `WithNocache(true)`.
 
+By default, this library only loads templates with `.html`, `.gohtml` and `.gotxt` extensions.
+To specify file extensions to load, use `WithExtensions('.ext1', '.ext2', ...)`.
+
 ### Built-in template functions
 
-By default, this library adds some [helpers](/internal/builtin.go) to the template.
+This library adds some [helpers](/internal/builtin.go) to the template.
 To disable all built-in functions use`WithoutBuiltinFuncs()`,
 or `WithoutBuiltinFuncs('fn1', 'fn2', ...)` to disable specific function.
 
@@ -92,4 +97,5 @@ You can add custom funcs using `WithFuncs`.
 ## Pagination
 
 This library provides a simple pagination implementation for using in template.
+
 See the [page](/page) package and the [example](/examples).

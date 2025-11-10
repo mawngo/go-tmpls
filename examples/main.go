@@ -44,9 +44,11 @@ func main() {
 	http.Handle("GET /static/", http.StripPrefix("/static/", static))
 	http.HandleFunc("GET /", func(res http.ResponseWriter, req *http.Request) {
 		// Paging demonstration, just empty data.
-		p := page.NewPage[any](make([]any, page.DefaultPageSize),
+		p := page.NewPage[any](
+			page.NewPaging(req.URL),
+			make([]any, page.DefaultPageSize),
 			page.DefaultPageSize*10,
-			page.NewPaginator(req))
+		)
 
 		// Execute template with data.
 		// This also sets the Content-Type header to text/html; charset=utf-8.

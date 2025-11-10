@@ -31,10 +31,6 @@ func (s Sort) FieldStrict() string {
 // String starting with negative sign '-' indicate desc sort.
 // Optionally, starting with positive sign '+' indicate asc sort.
 func NewSorts(raw []string) []Sort {
-	if len(raw) == 0 {
-		return nil
-	}
-
 	sorts := make([]Sort, 0, len(raw))
 	for _, rawSort := range raw {
 		isDesc := false
@@ -47,6 +43,7 @@ func NewSorts(raw []string) []Sort {
 				rawSort = rawSort[1:]
 			}
 		}
+
 		if rawSort == "" {
 			continue
 		}
@@ -60,21 +57,21 @@ func NewSorts(raw []string) []Sort {
 type Sorts []Sort
 
 // UnmarshalText support coma separated list.
-func (s *Sorts) UnmarshalText(text []byte) error {
+func (i *Sorts) UnmarshalText(text []byte) error {
 	sorts := strings.Split(string(text), ",")
-	*s = NewSorts(sorts)
+	*i = NewSorts(sorts)
 	return nil
 }
 
 // UnmarshalParam support coma separated list.
-func (s *Sorts) UnmarshalParam(param string) error {
+func (i *Sorts) UnmarshalParam(param string) error {
 	sorts := strings.Split(param, ",")
-	*s = NewSorts(sorts)
+	*i = NewSorts(sorts)
 	return nil
 }
 
 // UnmarshalJSON support coma separated list string or array of string.
-func (s *Sorts) UnmarshalJSON(b []byte) error {
+func (i *Sorts) UnmarshalJSON(b []byte) error {
 	data := string(b)
 	if data == "null" {
 		return nil
@@ -82,63 +79,13 @@ func (s *Sorts) UnmarshalJSON(b []byte) error {
 
 	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
 		data = data[len(`"`) : len(data)-len(`"`)]
-		return s.UnmarshalParam(data)
+		return i.UnmarshalParam(data)
 	}
 
 	var sorts []string
 	if err := json.Unmarshal(b, &sorts); err != nil {
 		return err
 	}
-	*s = NewSorts(sorts)
+	*i = NewSorts(sorts)
 	return nil
-}
-
-// Label return sort with direction indicated by arrow.
-func (s Sorts) Label() string {
-	if len(s) == 0 {
-		return ""
-	}
-	buff := strings.Builder{}
-	for i := 0; i < len(s); i++ {
-		field := s[i].Field
-		if field == "" {
-			continue
-		}
-		if i > 0 {
-			buff.WriteString(", ")
-		}
-
-		buff.WriteString(strings.ReplaceAll(field, "_", " "))
-		if s[i].IsDesc {
-			buff.WriteString(" ↓")
-		} else {
-			buff.WriteString(" ↑")
-		}
-	}
-	return buff.String()
-}
-
-// LabelStrict return sort (field-strict) with direction indicated by arrow.
-func (s Sorts) LabelStrict() string {
-	if len(s) == 0 {
-		return ""
-	}
-	buff := strings.Builder{}
-	for i := 0; i < len(s); i++ {
-		field := s[i].FieldStrict()
-		if field == "" {
-			continue
-		}
-		if i > 0 {
-			buff.WriteString(", ")
-		}
-
-		buff.WriteString(strings.ReplaceAll(field, "_", " "))
-		if s[i].IsDesc {
-			buff.WriteString(" ↓")
-		} else {
-			buff.WriteString(" ↑")
-		}
-	}
-	return buff.String()
 }
