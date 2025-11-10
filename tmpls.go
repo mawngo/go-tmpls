@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"net/http"
 	fspath "path"
 	"strings"
 	"sync"
@@ -155,4 +156,50 @@ func (t *Templates) ExecuteTemplate(wr io.Writer, name string, data any) error {
 		}
 	}
 	return tmpl.ExecuteTemplate(wr, name, data)
+}
+
+// MustExecuteTemplate execute the specified template with the given data and panic if error occurs.
+func (t *Templates) MustExecuteTemplate(wr io.Writer, name string, data any) {
+	err := t.ExecuteTemplate(wr, name, data)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// NewStandardWebFS sets up [Templates] and [http.FileServer] based on golang-standards/project-layout,
+// which read template from web/template and serve static files from web/static.
+func NewStandardWebFS(cwd fs.FS, options ...TemplatesOption) (*Templates, http.Handler, error) {
+	fileSystem, err := fs.Sub(cwd, "web")
+	if err != nil {
+		return nil, nil, err
+	}
+	staticFs, err := fs.Sub(fileSystem, "static")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	templateFs, err := fs.Sub(fileSystem, "template")
+	if err != nil {
+		return nil, nil, err
+	}
+	templateCache, err := New(templateFs, options...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return templateCache, http.FileServer(http.FS(staticFs)), nil
+}
+
+// NewStandardTemplateFS returns TemplateCache based on golang-standards/project-layout,
+// which read template from web/template.
+func NewStandardTemplateFS(cwd fs.FS, options ...TemplatesOption) (*Templates, error) {
+	fileSystem, err := fs.Sub(cwd, "web")
+	if err != nil {
+		return nil, err
+	}
+
+	templateFs, err := fs.Sub(fileSystem, "template")
+	if err != nil {
+		return nil, err
+	}
+	return New(templateFs, options...)
 }
