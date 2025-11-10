@@ -9,13 +9,13 @@ import (
 
 func NewBuiltinFuncMap(excludes ...string) map[string]any {
 	builtin := map[string]any{
-		// Pack value pairs into a map.
-		// Example: dict "Users" .MostPopular "Current" .CurrentUser.
-		"dict":   dict,
-		"dig":    dig,
-		"strval": strval,
-		"N":      N,
-		"int":    toInt,
+		"dict":    dict,
+		"dig":     dig,
+		"strval":  strval,
+		"until":   until,
+		"ternary": ternary,
+
+		"int": toInt,
 		"add": func(a any, i ...any) int {
 			sum := toInt(a)
 			for _, b := range i {
@@ -48,12 +48,47 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 			}
 			return m
 		},
-		"upper":    strings.ToUpper,
-		"lower":    strings.ToLower,
-		"title":    strings.ToTitle,
+
+		"float64": toFloat64,
+		"addf": func(a any, i ...any) float64 {
+			sum := toFloat64(a)
+			for _, b := range i {
+				sum += toFloat64(b)
+			}
+			return sum
+		},
+		"subf": func(a, b any) float64 { return toFloat64(a) - toFloat64(b) },
+		"divf": func(a, b any) float64 {
+			return toFloat64(a) / toFloat64(b)
+		},
+		"mulf": func(a any, i ...any) float64 {
+			total := toFloat64(a)
+			for _, b := range i {
+				total *= toFloat64(b)
+			}
+			return total
+		},
+		"minf": func(a any, i ...any) float64 {
+			m := toFloat64(a)
+			for _, b := range i {
+				m = min(m, toFloat64(b))
+			}
+			return m
+		},
+		"maxf": func(a any, i ...any) float64 {
+			m := toFloat64(a)
+			for _, b := range i {
+				m = max(m, toFloat64(b))
+			}
+			return m
+		},
+
+		"upper": strings.ToUpper,
+		"lower": strings.ToLower,
+		"title": strings.ToTitle,
+
 		"date":     date,
 		"datetime": datetime,
-		"ternary":  ternary,
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
@@ -61,9 +96,9 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 	return builtin
 }
 
-// N create a pseudo slice for range over number in template.
+// until create a pseudo slice for range over number in the template.
 // The second parameter v can be used for preserving the dot type.
-func N(n int, v ...any) []any {
+func until(n int, v ...any) []any {
 	arr := make([]any, 0, n)
 	if len(v) == 0 {
 		for i := 0; i < n; i++ {
@@ -93,7 +128,8 @@ func strval(v any) string {
 	}
 }
 
-// date format time, default format is time.DateOnly.
+// date format time.
+// The default format is time.DateOnly.
 func date(v time.Time, format ...string) string {
 	if len(format) == 0 {
 		return v.Format(time.DateOnly)
@@ -101,7 +137,8 @@ func date(v time.Time, format ...string) string {
 	return v.Format(format[0])
 }
 
-// datetime format time, default format is time.DateTime.
+// datetime format time.
+// The default format is time.DateTime.
 func datetime(v time.Time, format ...string) string {
 	if len(format) == 0 {
 		return v.Format(time.DateTime)
@@ -111,6 +148,7 @@ func datetime(v time.Time, format ...string) string {
 
 // dict https://github.com/Masterminds/sprig.
 // Creating dictionaries is done by calling the dict function and passing it a list of pairs.
+// Example: dict "Users" .MostPopular "Current" .CurrentUser.
 func dict(v ...any) map[string]any {
 	dict := map[string]any{}
 	lenv := len(v)
@@ -180,42 +218,4 @@ func indirect(a interface{}) interface{} {
 		v = v.Elem()
 	}
 	return v.Interface()
-}
-
-func toInt(i any) int {
-	i = indirect(i)
-	switch s := i.(type) {
-	case int:
-		return s
-	case time.Weekday:
-		return int(s)
-	case time.Month:
-		return int(s)
-	case int64:
-		return int(s)
-	case int32:
-		return int(s)
-	case int16:
-		return int(s)
-	case int8:
-		return int(s)
-	case uint:
-		return int(s)
-	case uint64:
-		return int(s)
-	case uint32:
-		return int(s)
-	case uint16:
-		return int(s)
-	case uint8:
-		return int(s)
-	case float64:
-		return int(s)
-	case float32:
-		return int(s)
-	case nil:
-		return 0
-	default:
-		panic(fmt.Errorf("unable to cast %#v of type %T to int", i, i))
-	}
 }
