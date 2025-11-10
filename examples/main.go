@@ -40,6 +40,7 @@ func main() {
 		tmpls.WithNocache(*devmode),
 		// Only parse .gohtml files.
 		tmpls.WithExtensions(".gohtml"),
+		tmpls.WithPrefixMap("components/", "_"),
 		// On execute callback example: always set the content type to text/html.
 		tmpls.WithOnExecute(func(w io.Writer, _ tmpls.Template, _ string, _ any) error {
 			if rwr, ok := w.(http.ResponseWriter); ok {
@@ -64,8 +65,7 @@ func main() {
 		)
 
 		// Execute template with data.
-		cache.MustExecuteTemplate(res,
-			"index", page.D{"Name": *name, "Page": p})
+		cache.MustExecuteTemplate(res, "index", page.D{"Name": *name, "Page": p})
 	})
 
 	println("Serving at " + *addr)

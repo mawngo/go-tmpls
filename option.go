@@ -13,6 +13,7 @@ type templatesOptions struct {
 	pathSeparator string
 	initFn        func() Template
 	extensions    map[string]struct{}
+	prefixMap     map[string]string
 
 	funcs           FuncMap
 	excludeFuncs    []string
@@ -41,6 +42,22 @@ func WithExtensions(extensions ...string) TemplatesOption {
 func WithSeparator(separator string) TemplatesOption {
 	return func(options *templatesOptions) {
 		options.pathSeparator = separator
+	}
+}
+
+// WithPrefixMap configure prefix mapping for the template name.
+//
+// For example, WithPrefixMap("components/", "_") will result in all templates in the "components" directory
+// will be named as _(name) instead of components.(name).
+//
+// The prefix always uses / for separating paths.
+func WithPrefixMap(keyValues ...string) TemplatesOption {
+	return func(options *templatesOptions) {
+		pairCnt := len(keyValues) / 2
+		options.prefixMap = make(map[string]string, pairCnt)
+		for i := 0; i < pairCnt; i++ {
+			options.prefixMap[keyValues[i*2]] = keyValues[i*2+1]
+		}
 	}
 }
 

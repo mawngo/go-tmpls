@@ -15,6 +15,7 @@ import (
 type Templates struct {
 	fs         fs.FS
 	extensions map[string]struct{}
+	prefixMap  map[string]string
 	separator  string
 	baseFn     func() (Template, error)
 	onExecute  func(w io.Writer, t Template, name string, data any) error
@@ -49,6 +50,7 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 	t := &Templates{
 		fs:         fs,
 		extensions: opt.extensions,
+		prefixMap:  opt.prefixMap,
 		separator:  opt.pathSeparator,
 		onExecute:  opt.onExecute,
 	}
@@ -98,7 +100,16 @@ func (t *Templates) scan(dir fs.FS, base Template) (Template, error) {
 				return nil
 			}
 		}
-		name := strings.Join(strings.Split(path, "/"), t.separator)
+
+		name := path
+		for prefix, replace := range t.prefixMap {
+			if !strings.HasPrefix(name, prefix) {
+				continue
+			}
+			name = replace + name[len(prefix):]
+			break
+		}
+		name = strings.Join(strings.Split(name, "/"), t.separator)
 		name = strings.TrimSuffix(name, ext)
 
 		b, err := fs.ReadFile(dir, path)

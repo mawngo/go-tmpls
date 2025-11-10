@@ -64,7 +64,6 @@ func main() {
 		)
 
 		// Execute template with data.
-		// This also sets the Content-Type header to text/html; charset=utf-8.
 		cache.MustExecuteTemplate(res, "index", page.D{"Name": *name, "Page": p})
 	})
 

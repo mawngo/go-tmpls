@@ -2,7 +2,7 @@
 
 {{ define "main" }}
     <h1 class="title m-6">
-        {{ template "components.hello" . }}
+        {{ template "_hello" . }}
     </h1>
     <div class="block">
         <a href="{{ .Page.PathToSort "-name" }}">Sort Name Desc</a>
@@ -16,5 +16,5 @@
         <span> - </span>
         <a href="{{ .Page.PathToSize 48 }}">Size 48</a>
     </div>
-    {{ template "components.paginator" .Page }}
+    {{ template "_paginator" .Page }}
 {{ end }}
