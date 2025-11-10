@@ -1,6 +1,6 @@
 package page
 
-import "github.com/mawngo/go-tmpls/page/simplepage"
+import "github.com/mawngo/go-tmpls/v2/page/simplepage"
 
 type Sorts = simplepage.Sorts
 type Sort = simplepage.Sort

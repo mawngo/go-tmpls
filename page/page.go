@@ -1,7 +1,7 @@
 package page
 
 import (
-	"github.com/mawngo/go-tmpls/page/simplepage"
+	"github.com/mawngo/go-tmpls/v2/page/simplepage"
 	"math"
 	"net/url"
 	"strconv"

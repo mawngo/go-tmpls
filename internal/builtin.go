@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"text/template"
 	"time"
 )
 
-func NewBuiltinFuncMap(excludes ...string) template.FuncMap {
-	builtin := template.FuncMap{
+func NewBuiltinFuncMap(excludes ...string) map[string]any {
+	builtin := map[string]any{
 		// Pack value pairs into a map.
 		// Example: dict "Users" .MostPopular "Current" .CurrentUser.
 		"dict":   dict,
