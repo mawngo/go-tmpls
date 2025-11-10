@@ -5,7 +5,7 @@ Template caching and paging utilities. Require Go 1.25+
 ## Installation
 
 ```shell
-go get -u github.com/mawngo/go-tmpls
+go get -u github.com/mawngo/go-tmpls/v2
 ```
 
 ## Usage
@@ -58,15 +58,14 @@ func main() {
 	http.HandleFunc("GET /", func(res http.ResponseWriter, req *http.Request) {
 		// Paging demonstration, just empty data.
 		p := page.NewPage[any](
-			page.NewPaging(req.URL),
-			make([]any, page.DefaultPageSize),
-			page.DefaultPageSize*10,
+			page.NewPaging(req.URL),              // Paginator
+			make([]any, page.DefaultPageSize*10), // Data
+			page.DefaultPageSize*10,              // Count
 		)
 
 		// Execute template with data.
 		// This also sets the Content-Type header to text/html; charset=utf-8.
-		cache.MustExecuteTemplate(res,
-			"index", page.D{"Name": *name, "Page": p})
+		cache.MustExecuteTemplate(res, "index", page.D{"Name": *name, "Page": p})
 	})
 
 	println("Serving at " + *addr)

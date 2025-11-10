@@ -5,6 +5,7 @@ import (
 	"flag"
 	"github.com/mawngo/go-tmpls/v2"
 	"github.com/mawngo/go-tmpls/v2/page"
+	"io"
 	"io/fs"
 	"net/http"
 	"os"
@@ -36,7 +37,19 @@ func main() {
 	// which read template from web/template and serve static files from web/static.
 	cache, static, err := tmpls.NewStandardWebFS(root,
 		// Disable cache in dev mode, so we can see changes without re-run the project.
-		tmpls.WithNocache(*devmode))
+		tmpls.WithNocache(*devmode),
+		// Only parse .gohtml files.
+		tmpls.WithExtensions(".gohtml"),
+		// On execute callback example: always set the content type to text/html.
+		tmpls.WithOnExecute(func(w io.Writer, _ tmpls.Template, _ string, _ any) error {
+			if rwr, ok := w.(http.ResponseWriter); ok {
+				if rwr.Header().Get("Content-Type") == "" {
+					rwr.Header().Set("Content-Type", "text/html; charset=utf-8")
+				}
+			}
+			return nil
+		}),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -45,13 +58,12 @@ func main() {
 	http.HandleFunc("GET /", func(res http.ResponseWriter, req *http.Request) {
 		// Paging demonstration, just empty data.
 		p := page.NewPage[any](
-			page.NewPaging(req.URL),
-			make([]any, page.DefaultPageSize),
-			page.DefaultPageSize*10,
+			page.NewPaging(req.URL),              // Paginator
+			make([]any, page.DefaultPageSize*10), // Data
+			page.DefaultPageSize*10,              // Count
 		)
 
 		// Execute template with data.
-		// This also sets the Content-Type header to text/html; charset=utf-8.
 		cache.MustExecuteTemplate(res,
 			"index", page.D{"Name": *name, "Page": p})
 	})

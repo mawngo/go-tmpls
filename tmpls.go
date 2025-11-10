@@ -23,6 +23,10 @@ type Templates struct {
 	mu     sync.Mutex
 }
 
+// New create a new [Templates] instance.
+// On creation, all templates in the specified file system will be parsed.
+//
+// See [TemplatesOption] for more configurations.
 func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 	opt := templatesOptions{
 		pathSeparator: ".",
@@ -158,7 +162,7 @@ func (t *Templates) ExecuteTemplate(wr io.Writer, name string, data any) error {
 	return tmpl.ExecuteTemplate(wr, name, data)
 }
 
-// MustExecuteTemplate execute the specified template with the given data and panic if error occurs.
+// MustExecuteTemplate execute the specified template with the given data and panic if any error occurs.
 func (t *Templates) MustExecuteTemplate(wr io.Writer, name string, data any) {
 	err := t.ExecuteTemplate(wr, name, data)
 	if err != nil {
@@ -167,7 +171,7 @@ func (t *Templates) MustExecuteTemplate(wr io.Writer, name string, data any) {
 }
 
 // NewStandardWebFS sets up [Templates] and [http.FileServer] based on golang-standards/project-layout,
-// which read template from web/template and serve static files from web/static.
+// which read templates from web/template and serve static files from web/static.
 func NewStandardWebFS(cwd fs.FS, options ...TemplatesOption) (*Templates, http.Handler, error) {
 	fileSystem, err := fs.Sub(cwd, "web")
 	if err != nil {
@@ -189,8 +193,8 @@ func NewStandardWebFS(cwd fs.FS, options ...TemplatesOption) (*Templates, http.H
 	return templateCache, http.FileServer(http.FS(staticFs)), nil
 }
 
-// NewStandardTemplateFS returns TemplateCache based on golang-standards/project-layout,
-// which read template from web/template.
+// NewStandardTemplateFS returns [Templates] based on golang-standards/project-layout,
+// which read templates from web/template.
 func NewStandardTemplateFS(cwd fs.FS, options ...TemplatesOption) (*Templates, error) {
 	fileSystem, err := fs.Sub(cwd, "web")
 	if err != nil {
