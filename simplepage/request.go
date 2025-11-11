@@ -4,7 +4,7 @@ const (
 	// DefaultPageNumber the page number to be used instead when [Paging.PageNumber] is zero.
 	DefaultPageNumber = 1
 	// DefaultPageSize the page size to be used instead when [Paging.PageSize] is zero.
-	DefaultPageSize = 20
+	DefaultPageSize = 24
 	// MaxPageSize maximum page size, hard limit and should be enforced (except when unpaged).
 	MaxPageSize = 500
 )
