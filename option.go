@@ -73,7 +73,7 @@ func WithTextMode() TemplatesOption {
 	return func(options *templatesOptions) {
 		options.initFn = func() Template {
 			return textTemplate{
-				Template: text.New(""),
+				Template: text.New(BaseTemplateName),
 			}
 		}
 	}

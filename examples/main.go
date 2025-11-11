@@ -35,7 +35,7 @@ func main() {
 	// StandardWebFS set up TemplateCache and http.FileServer
 	// based on golang-standards/project-layout,
 	// which read template from web/template and serve static files from web/static.
-	cache, static, err := tmpls.NewStandardWebFS(root,
+	templates, static, err := tmpls.NewStandardWebFS(root,
 		// Disable cache in dev mode, so we can see changes without re-run the project.
 		tmpls.WithNocache(*devmode),
 		// Only parse .gohtml files.
@@ -55,6 +55,11 @@ func main() {
 		panic(err)
 	}
 
+	// Print loaded templates.
+	for _, template := range templates.Templates() {
+		println(template.Name())
+	}
+
 	http.Handle("GET /static/", http.StripPrefix("/static/", static))
 	http.HandleFunc("GET /", func(res http.ResponseWriter, req *http.Request) {
 		// Paging demonstration, just empty data.
@@ -65,7 +70,7 @@ func main() {
 		)
 
 		// Execute template with data.
-		cache.MustExecuteTemplate(res, "index", page.D{"Name": *name, "Page": p})
+		templates.MustExecuteTemplate(res, "index", page.D{"Name": *name, "Page": p})
 	})
 
 	println("Serving at " + *addr)

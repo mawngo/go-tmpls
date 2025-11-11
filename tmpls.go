@@ -11,6 +11,9 @@ import (
 	"sync"
 )
 
+// BaseTemplateName is the name of the base template.
+const BaseTemplateName = "__base__"
+
 // Templates collection of cached and preprocessed templates.
 type Templates struct {
 	fs         fs.FS
@@ -38,7 +41,7 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 		},
 		initFn: func() Template {
 			return htmlTemplate{
-				Template: template.New(""),
+				Template: template.New(BaseTemplateName),
 			}
 		},
 	}
@@ -122,13 +125,35 @@ func (t *Templates) scan(dir fs.FS, base Template) (Template, error) {
 	return base, err
 }
 
-// Base return cached template (cloned).
-func (t *Templates) Base() (Template, error) {
+// base return cached template (cloned).
+func (t *Templates) base() (Template, error) {
 	base, err := t.baseFn()
 	if err != nil {
 		return nil, err
 	}
 	return base.Clone()
+}
+
+// Lookup returns a template by name.
+// If the template does not exist, it returns nil.
+func (t *Templates) Lookup(name string) (Template, error) {
+	base, err := t.baseFn()
+	if err != nil {
+		return nil, err
+	}
+	return base.Lookup(name), nil
+}
+
+// Templates return a list of scanned and registered templates.
+//
+// This method returns nil slices if any error occurs.
+// If you want to handle the error, use [Templates.Lookup] with [BaseTemplateName] then [Template.Templates] instead.
+func (t *Templates) Templates() []Template {
+	base, err := t.baseFn()
+	if err != nil {
+		return nil
+	}
+	return base.Templates()
 }
 
 // Register parses the text and adds the resulting template to the template collection.
@@ -161,7 +186,7 @@ func (t *Templates) Register(name string, text string) error {
 
 // ExecuteTemplate execute the specified template with the given data.
 func (t *Templates) ExecuteTemplate(wr io.Writer, name string, data any) error {
-	tmpl, err := t.Base()
+	tmpl, err := t.base()
 	if err != nil {
 		return err
 	}
