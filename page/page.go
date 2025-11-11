@@ -17,6 +17,15 @@ type D map[string]any
 
 var _ Paged[any] = (*Page[any])(nil)
 
+// PagedData interface for casting to any [Paged] type.
+type PagedData interface {
+	GetPageable() simplepage.Pageable
+	GetSorts() []Sort
+	IsEmpty() bool
+}
+
+// Paged is the minimal interface for Pagination.
+// All pages results struct implement this interface.
 type Paged[T any] interface {
 	simplepage.Paged[T]
 
@@ -39,6 +48,9 @@ type Paged[T any] interface {
 
 	Query(name string) string
 	Search() string
+
+	URL() *url.URL
+	QueryValues() url.Values
 }
 
 // Page represents a page of data.
@@ -55,7 +67,7 @@ func NewPage[T any](p Pageable, items []T, total int64) Page[T] {
 	return Page[T]{
 		Page:    simplepage.NewPage(p, items, total),
 		url:     p.URL(),
-		queries: p.Queries(),
+		queries: p.QueryValues(),
 	}
 }
 
@@ -198,4 +210,14 @@ func (p Page[T]) Query(name string) string {
 // Search return value of ParamSearch query param, trimmed.
 func (p Page[T]) Search() string {
 	return strings.TrimSpace(p.queries.Get(ParamSearch))
+}
+
+// QueryValues return parsed request query params.
+func (p Page[T]) QueryValues() url.Values {
+	return p.queries
+}
+
+// URL return request URL.
+func (p Page[T]) URL() *url.URL {
+	return p.url
 }

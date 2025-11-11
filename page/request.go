@@ -24,7 +24,7 @@ type Pageable interface {
 	Search() string
 
 	URL() *url.URL
-	Queries() url.Values
+	QueryValues() url.Values
 }
 
 // Paging represent a page request.
@@ -46,21 +46,32 @@ func (p Paging) Search() string {
 	return strings.TrimSpace(p.queries.Get(ParamSearch))
 }
 
-func (p Paging) Queries() url.Values {
+// QueryValues return parsed request query params.
+func (p Paging) QueryValues() url.Values {
 	return p.queries
 }
 
+// URL return request URL.
 func (p Paging) URL() *url.URL {
 	return p.url
+}
+
+// Unsorted return a [Paging] without sorting.
+func (p Paging) Unsorted() Paging {
+	return Paging{
+		Paging:  p.Paging.Unsorted(),
+		url:     p.url,
+		queries: p.queries,
+	}
 }
 
 // NewDefaultPaging returns [Paging] with default values.
 func NewDefaultPaging(url *url.URL, sorts ...string) Paging {
 	return Paging{
 		Paging: simplepage.NewPaging(
-			simplepage.DefaultPageNumber,
-			simplepage.DefaultPageSize,
-			simplepage.NewSorts(sorts)...,
+			DefaultPageNumber,
+			DefaultPageSize,
+			NewSorts(sorts...)...,
 		),
 		queries: url.Query(),
 		url:     url,
