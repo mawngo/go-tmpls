@@ -2,11 +2,13 @@ package tmpls
 
 import (
 	"io"
-	text "text/template"
+	texttemplate "text/template"
 )
 
 // TemplatesOption is the option for configuring [Templates].
 type TemplatesOption func(*templatesOptions)
+
+type OnTemplateExecuteFn func(t Template, w io.Writer, data any) error
 
 type templatesOptions struct {
 	nocache       bool
@@ -18,7 +20,8 @@ type templatesOptions struct {
 	funcs           FuncMap
 	excludeFuncs    []string
 	disableBuiltins bool
-	onExecute       func(w io.Writer, t Template, name string, data any) error
+
+	onExecute OnTemplateExecuteFn
 }
 
 // WithExtensions configure included template extensions.
@@ -73,7 +76,7 @@ func WithTextMode() TemplatesOption {
 	return func(options *templatesOptions) {
 		options.initFn = func() Template {
 			return textTemplate{
-				Template: text.New(BaseTemplateName),
+				Template: texttemplate.New(""),
 			}
 		}
 	}
@@ -98,7 +101,7 @@ func WithoutBuiltinFuncs(funcNames ...string) TemplatesOption {
 }
 
 // WithOnExecute set a callback function that runs before the template is executed.
-func WithOnExecute(callback func(w io.Writer, t Template, name string, data any) error) TemplatesOption {
+func WithOnExecute(callback OnTemplateExecuteFn) TemplatesOption {
 	return func(options *templatesOptions) {
 		options.onExecute = callback
 	}

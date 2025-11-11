@@ -40,9 +40,12 @@ func main() {
 		tmpls.WithNocache(*devmode),
 		// Only parse .gohtml files.
 		tmpls.WithExtensions(".gohtml"),
-		tmpls.WithPrefixMap("components/", "_"),
+		tmpls.WithPrefixMap(
+			"components/", "_",
+			"layouts/", "_layouts/",
+		),
 		// On execute callback example: always set the content type to text/html.
-		tmpls.WithOnExecute(func(w io.Writer, _ tmpls.Template, _ string, _ any) error {
+		tmpls.WithOnExecute(func(tmpl tmpls.Template, w io.Writer, _ any) error {
 			if rwr, ok := w.(http.ResponseWriter); ok {
 				if rwr.Header().Get("Content-Type") == "" {
 					rwr.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -56,7 +59,11 @@ func main() {
 	}
 
 	// Print loaded templates.
-	for _, template := range templates.Templates() {
+	preloaded, err := templates.Preload()
+	if err != nil {
+		panic(err)
+	}
+	for _, template := range preloaded {
 		println(template.Name())
 	}
 

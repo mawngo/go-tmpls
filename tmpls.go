@@ -1,18 +1,24 @@
 package tmpls
 
 import (
+	"errors"
+	"fmt"
 	"github.com/mawngo/go-tmpls/v2/internal"
-	"html/template"
+	htmltemplate "html/template"
 	"io"
 	"io/fs"
 	"net/http"
 	fspath "path"
+	"regexp"
 	"strings"
 	"sync"
 )
 
-// BaseTemplateName is the name of the base template.
-const BaseTemplateName = "__base__"
+// templateNameRegex regex for matching template name in
+//   - {{template "name"}}
+//   - {{template "name" pipeline}}
+//   - {{define "name"}}
+var templateNameRegex = regexp.MustCompile(`{{\s*(template|define)\s+"([^"]+)"(?:\s+[\s\S]*?)?\s*}}`)
 
 // Templates collection of cached and preprocessed templates.
 type Templates struct {
@@ -20,11 +26,15 @@ type Templates struct {
 	extensions map[string]struct{}
 	prefixMap  map[string]string
 	separator  string
-	baseFn     func() (Template, error)
-	onExecute  func(w io.Writer, t Template, name string, data any) error
+	onExecute  OnTemplateExecuteFn
 
-	cached Template
-	mu     sync.Mutex
+	baseFn func() (Template, error)
+	// Map of parsed template by name.
+	templateMap map[string]Template
+	// Map of processed template name to template paths.
+	nameMap map[string]string
+	mu      sync.RWMutex
+	nocache bool
 }
 
 // New create a new [Templates] instance.
@@ -41,7 +51,7 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 		},
 		initFn: func() Template {
 			return htmlTemplate{
-				Template: template.New(BaseTemplateName),
+				Template: htmltemplate.New(""),
 			}
 		},
 	}
@@ -52,10 +62,14 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 
 	t := &Templates{
 		fs:         fs,
+		nocache:    opt.nocache,
 		extensions: opt.extensions,
 		prefixMap:  opt.prefixMap,
 		separator:  opt.pathSeparator,
 		onExecute:  opt.onExecute,
+
+		nameMap:     make(map[string]string),
+		templateMap: make(map[string]Template),
 	}
 
 	t.baseFn = func() (Template, error) {
@@ -68,26 +82,17 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 		if len(opt.funcs) > 0 {
 			base = base.Funcs(opt.funcs)
 		}
-		return t.scan(fs, base)
+		return base, nil
 	}
 
-	// Catch potential errors early.
-	base, err := t.baseFn()
-	if err != nil {
+	if err := t.scanNames(); err != nil {
 		return nil, err
-	}
-
-	if !opt.nocache {
-		t.cached = base
-		t.baseFn = func() (Template, error) {
-			return t.cached, nil
-		}
 	}
 	return t, nil
 }
 
-func (t *Templates) scan(dir fs.FS, base Template) (Template, error) {
-	err := fs.WalkDir(dir, ".", func(path string, d fs.DirEntry, err error) error {
+func (t *Templates) scanNames() error {
+	return fs.WalkDir(t.fs, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -115,83 +120,121 @@ func (t *Templates) scan(dir fs.FS, base Template) (Template, error) {
 		name = strings.Join(strings.Split(name, "/"), t.separator)
 		name = strings.TrimSuffix(name, ext)
 
-		b, err := fs.ReadFile(dir, path)
-		if err != nil {
-			return err
+		if prevPath, ok := t.nameMap[name]; ok {
+			return errors.New(fmt.Sprintf(`template name conflict: "%s" (files %s and %s)`, name, prevPath, path))
 		}
-		base, err = base.New(name).Parse(string(b))
+		t.nameMap[name] = path
 		return err
 	})
-	return base, err
 }
 
-// base return cached template (cloned).
-func (t *Templates) base() (Template, error) {
-	base, err := t.baseFn()
+func (t *Templates) resolve(base Template, name string) (Template, error) {
+	path, ok := t.nameMap[name]
+	if !ok {
+		return nil, errors.New("template name not found '" + name + "'")
+	}
+
+	if base == nil {
+		var err error
+		base, err = t.baseFn()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	b, err := fs.ReadFile(t.fs, path)
 	if err != nil {
 		return nil, err
 	}
-	return base.Clone()
+
+	content := string(b)
+	includedTemplateMatches := templateNameRegex.FindAllStringSubmatch(content, -1)
+	// Exclude template names that are also having {{define}} block.
+	excludedTemplateNames := make(map[string]struct{})
+	for _, v := range includedTemplateMatches {
+		if v[1] == "template" {
+			continue
+		}
+		name := v[2]
+		if len(name) == 0 {
+			continue
+		}
+		excludedTemplateNames[name] = struct{}{}
+	}
+
+	// Process included templates top down, then finally parse the content.
+	for _, v := range includedTemplateMatches {
+		name := v[2]
+		if len(name) == 0 {
+			continue
+		}
+		if _, ok := excludedTemplateNames[name]; ok {
+			continue
+		}
+		var err error
+		base, err = t.resolve(base, name)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return base.New(name).Parse(content)
 }
 
-// Lookup returns a template by name.
+// Preload parse all scanned templates.
+// Any template whose resolved name starts with an underscore (_) will be ignored.
+func (t *Templates) Preload() ([]Template, error) {
+	res := make([]Template, 0, 10)
+	for name := range t.nameMap {
+		if name[0] == '_' {
+			continue
+		}
+		temp, err := t.Lookup(name)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, temp)
+	}
+	return res, nil
+}
+
+// Lookup returns a cloned template by name.
 // If the template does not exist, it returns nil.
 func (t *Templates) Lookup(name string) (Template, error) {
-	base, err := t.baseFn()
+	if t.nocache {
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		return t.resolve(nil, name)
+	}
+
+	t.mu.RLock()
+	if tmpl, ok := t.templateMap[name]; ok {
+		defer t.mu.RUnlock()
+		return tmpl.Clone()
+	}
+	t.mu.RUnlock()
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if tmpl, ok := t.templateMap[name]; ok {
+		return tmpl.Clone()
+	}
+
+	tmpl, err := t.resolve(nil, name)
 	if err != nil {
 		return nil, err
 	}
-	return base.Lookup(name), nil
-}
-
-// Templates return a list of scanned and registered templates.
-//
-// This method returns nil slices if any error occurs.
-// If you want to handle the error, use [Templates.Lookup] with [BaseTemplateName] then [Template.Templates] instead.
-func (t *Templates) Templates() []Template {
-	base, err := t.baseFn()
-	if err != nil {
-		return nil
-	}
-	return base.Templates()
-}
-
-// Register parses the text and adds the resulting template to the template collection.
-func (t *Templates) Register(name string, text string) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	// Cache is enabled.
-	if t.cached != nil {
-		base, err := t.cached.New(name).Parse(text)
-		if err != nil {
-			return err
-		}
-		t.cached = base
-		return nil
-	}
-
-	// Cache is disabled.
-	// Patch the base function to create a new template.
-	// Not very effective, but usually the cache is only disabled in the dev environment.
-	t.baseFn = func() (Template, error) {
-		base, err := t.baseFn()
-		if err != nil {
-			return base, err
-		}
-		return base.New(name).Parse(text)
-	}
-	return nil
+	t.templateMap[name] = tmpl
+	return tmpl.Clone()
 }
 
 // ExecuteTemplate execute the specified template with the given data.
 func (t *Templates) ExecuteTemplate(wr io.Writer, name string, data any) error {
-	tmpl, err := t.base()
+	tmpl, err := t.Lookup(name)
 	if err != nil {
 		return err
 	}
 	if t.onExecute != nil {
-		if err := t.onExecute(wr, tmpl, name, data); err != nil {
+		if err := t.onExecute(tmpl, wr, data); err != nil {
 			return err
 		}
 	}

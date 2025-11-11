@@ -18,10 +18,6 @@ type Template interface {
 
 	// Name See [html/template.Template.Name].
 	Name() string
-	// Templates See [html/template.Template.Templates].
-	Templates() []Template
-	// Lookup See [html/template.Template.Lookup].
-	Lookup(name string) Template
 	// Funcs See [html/template.Template.Funcs].
 	Funcs(funcs FuncMap) Template
 	// Clone See [html/template.Template.Clone].
@@ -66,19 +62,6 @@ func (t htmlTemplate) Unwrap() any {
 	return t.Template
 }
 
-func (t htmlTemplate) Templates() []Template {
-	templates := t.Template.Templates()
-	res := make([]Template, 0, len(templates))
-	for _, v := range templates {
-		res = append(res, htmlTemplate{v})
-	}
-	return res
-}
-
-func (t htmlTemplate) Lookup(name string) Template {
-	return htmlTemplate{t.Template.Lookup(name)}
-}
-
 // textTemplate simple wrapper for [text/template.Template].
 type textTemplate struct {
 	*text.Template
@@ -108,17 +91,4 @@ func (t textTemplate) Funcs(funcs FuncMap) Template {
 
 func (t textTemplate) Unwrap() any {
 	return t.Template
-}
-
-func (t textTemplate) Templates() []Template {
-	templates := t.Template.Templates()
-	res := make([]Template, 0, len(templates))
-	for _, v := range templates {
-		res = append(res, textTemplate{v})
-	}
-	return res
-}
-
-func (t textTemplate) Lookup(name string) Template {
-	return textTemplate{t.Template.Lookup(name)}
 }
