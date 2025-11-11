@@ -50,13 +50,18 @@ type Page[T any] struct {
 	queries url.Values
 }
 
-// NewPage returns a new page from data, total items and paginator.
+// NewPage returns a new [Page] from paginator, data, and total items count.
 func NewPage[T any](p Pageable, items []T, total int64) Page[T] {
 	return Page[T]{
 		Page:    simplepage.NewPage(p, items, total),
 		url:     p.URL(),
 		queries: p.Queries(),
 	}
+}
+
+// NewEmptyPage returns a new empty [Page].
+func NewEmptyPage[T any](p Pageable) Page[T] {
+	return NewPage[T](p, nil, 0)
 }
 
 // HasNext return whether this is the last page.

@@ -14,6 +14,7 @@ type Paged[T any] interface {
 	GetItems() []T
 	GetSorts() []Sort
 	GetPageable() Pageable
+	IsEmpty() bool
 }
 
 // Slice is the basic paginated data without total items count.
@@ -36,6 +37,10 @@ func (p Slice[T]) GetSorts() []Sort {
 	return p.Sorts
 }
 
+func (p Slice[T]) IsEmpty() bool {
+	return len(p.Items) == 0
+}
+
 // GetPageable reconstruct [Paging] from this Slice data,
 // used for further processing Items and constructing new Slice.
 func (p Slice[T]) GetPageable() Pageable {
@@ -47,7 +52,7 @@ func (p Slice[T]) GetPageable() Pageable {
 	}
 }
 
-// NewSlice create new Slice.
+// NewSlice create new [Slice].
 func NewSlice[T any](pageable Pageable, items []T, hasNext bool) Slice[T] {
 	if pageable.IsUnpaged() {
 		pageable = Paging{
@@ -69,6 +74,11 @@ func NewSlice[T any](pageable Pageable, items []T, hasNext bool) Slice[T] {
 	}
 }
 
+// NewEmptySlice create new empty [Slice].
+func NewEmptySlice[T any](pageable Pageable) Slice[T] {
+	return NewSlice[T](pageable, nil, false)
+}
+
 // Page represents paged data.
 type Page[T any] struct {
 	Slice[T]
@@ -76,7 +86,7 @@ type Page[T any] struct {
 	TotalItems int64 `json:"totalItems"`
 }
 
-// NewPage create new Page.
+// NewPage create new [Page].
 func NewPage[T any](pageable Pageable, items []T, totalItems int64) Page[T] {
 	if pageable.IsUnpaged() {
 		pageable = Paging{
@@ -104,4 +114,9 @@ func NewPage[T any](pageable Pageable, items []T, totalItems int64) Page[T] {
 		TotalPages: totalPages,
 		TotalItems: totalItems,
 	}
+}
+
+// NewEmptyPage create new empty [Page].
+func NewEmptyPage[T any](pageable Pageable) Page[T] {
+	return NewPage[T](pageable, nil, 0)
 }
