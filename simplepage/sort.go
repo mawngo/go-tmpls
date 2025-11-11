@@ -89,3 +89,28 @@ func (i *Sorts) UnmarshalJSON(b []byte) error {
 	*i = NewSorts(sorts)
 	return nil
 }
+
+// LabelStrict return sort (field-strict) with direction indicated by arrow.
+func (s Sorts) LabelStrict() string {
+	if len(s) == 0 {
+		return ""
+	}
+	buff := strings.Builder{}
+	for i := 0; i < len(s); i++ {
+		field := s[i].FieldStrict()
+		if field == "" {
+			continue
+		}
+		if i > 0 {
+			buff.WriteString(", ")
+		}
+
+		buff.WriteString(strings.ReplaceAll(field, "_", " "))
+		if s[i].IsDesc {
+			buff.WriteString(" ↓")
+		} else {
+			buff.WriteString(" ↑")
+		}
+	}
+	return buff.String()
+}
