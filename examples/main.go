@@ -28,11 +28,11 @@ func main() {
 
 	// Setup template cache and http.FileServer from root,
 	// which is embedded when dev mode is disabled.
-	// You can use StandardTemplateFS to create the TemplateCache only,
-	// or NewTemplateCache(fs, options...) to create a template cache
+	// You can use NewStandardTemplateFS to create the TemplateCache only,
+	// or New(fs, options...) to create a template cache
 	// if you want to use another directory for template.
 	//
-	// StandardWebFS set up TemplateCache and http.FileServer
+	// NewStandardWebFS set up Templates and http.FileServer
 	// based on golang-standards/project-layout,
 	// which read template from web/template and serve static files from web/static.
 	templates, static, err := tmpls.NewStandardWebFS(root,
@@ -40,10 +40,8 @@ func main() {
 		tmpls.WithNocache(*devmode),
 		// Only parse .gohtml files.
 		tmpls.WithExtensions(".gohtml"),
-		tmpls.WithPrefixMap(
-			"components/", "_",
-			"layouts/", "_layouts/",
-		),
+		// Rename all templates inside _components/ from _components.(name) to _(name).
+		tmpls.WithPrefixMap("_components/", "_"),
 		// On execute callback example: always set the content type to text/html.
 		tmpls.WithOnExecute(func(_ tmpls.Template, w io.Writer, _ any) error {
 			if rwr, ok := w.(http.ResponseWriter); ok {

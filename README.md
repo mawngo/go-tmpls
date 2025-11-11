@@ -40,11 +40,11 @@ func main() {
 
 	// Setup template cache and http.FileServer from root,
 	// which is embedded when dev mode is disabled.
-	// You can use StandardTemplateFS to create the TemplateCache only,
-	// or NewTemplateCache(fs, options...) to create a template cache
+	// You can use NewStandardTemplateFS to create the TemplateCache only,
+	// or New(fs, options...) to create a template cache
 	// if you want to use another directory for template.
 	//
-	// StandardWebFS set up TemplateCache and http.FileServer
+	// NewStandardWebFS set up Templates and http.FileServer
 	// based on golang-standards/project-layout,
 	// which read template from web/template and serve static files from web/static.
 	templates, static, err := tmpls.NewStandardWebFS(root,
