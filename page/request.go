@@ -60,7 +60,7 @@ func NewDefaultPaging(url *url.URL, sorts ...string) Paging {
 		Paging: simplepage.NewPaging(
 			simplepage.DefaultPageNumber,
 			simplepage.DefaultPageSize,
-			simplepage.NewSorts(sorts),
+			simplepage.NewSorts(sorts)...,
 		),
 		queries: url.Query(),
 		url:     url,

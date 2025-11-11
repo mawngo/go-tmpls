@@ -28,8 +28,8 @@ func (s Sort) FieldStrict() string {
 }
 
 // NewSorts create a list of [Sort] from a list of string.
-// String starting with negative sign '-' indicate desc sort.
-// Optionally, starting with positive sign '+' indicate asc sort.
+// String starting with a negative sign '-' indicates desc sort.
+// Optionally, starting with a positive sign '+' indicates asc sort.
 func NewSorts(raw []string) []Sort {
 	sorts := make([]Sort, 0, len(raw))
 	for _, rawSort := range raw {

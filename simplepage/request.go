@@ -94,7 +94,7 @@ func (p Paging) Unsorted() Paging {
 }
 
 // NewPaging create a [Paging].
-func NewPaging(page int, size int, sorts []Sort) Paging {
+func NewPaging(page int, size int, sorts ...Sort) Paging {
 	return Paging{
 		Page:  page,
 		Size:  size,
