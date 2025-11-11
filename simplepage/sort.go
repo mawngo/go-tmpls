@@ -30,7 +30,7 @@ func (s Sort) FieldStrict() string {
 // NewSorts create a list of [Sort] from a list of string.
 // String starting with a negative sign '-' indicates desc sort.
 // Optionally, starting with a positive sign '+' indicates asc sort.
-func NewSorts(raw []string) []Sort {
+func NewSorts(raw []string) Sorts {
 	sorts := make([]Sort, 0, len(raw))
 	for _, rawSort := range raw {
 		isDesc := false
@@ -53,7 +53,6 @@ func NewSorts(raw []string) []Sort {
 }
 
 // Sorts is a list of [Sort], with custom binding logic.
-// You should use []Sort directly, except for binding.
 type Sorts []Sort
 
 // UnmarshalText support coma separated list.

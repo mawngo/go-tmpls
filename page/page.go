@@ -20,7 +20,7 @@ var _ Paged[any] = (*Page[any])(nil)
 // PagedData interface for casting to any [Paged] type.
 type PagedData interface {
 	GetPageable() simplepage.Pageable
-	GetSorts() []Sort
+	GetSorts() Sorts
 	IsEmpty() bool
 }
 

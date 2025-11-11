@@ -25,7 +25,7 @@ type Pageable interface {
 	// PageOffset returning the offset of the first item in the page.
 	PageOffset() int64
 	// PageSorts return sort config for this page.
-	PageSorts() []Sort
+	PageSorts() Sorts
 }
 
 // Paging contains paging request information for embedding in DTO.
@@ -80,7 +80,7 @@ func (p Paging) PageOffset() int64 {
 }
 
 // PageSorts return sorts configuration of this paging.
-func (p Paging) PageSorts() []Sort {
+func (p Paging) PageSorts() Sorts {
 	return p.Sorts
 }
 

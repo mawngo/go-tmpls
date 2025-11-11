@@ -12,7 +12,7 @@ var _ Paged[any] = (*Slice[any])(nil)
 // in a single api (which you should not, and which is what I did).
 type Paged[T any] interface {
 	GetItems() []T
-	GetSorts() []Sort
+	GetSorts() Sorts
 	GetPageable() Pageable
 	IsEmpty() bool
 }
@@ -23,17 +23,17 @@ type Slice[T any] struct {
 	HasNext bool `json:"hasNext"`
 	HasPrev bool `json:"hasPrev"`
 
-	PageNumber int    `json:"page"`
-	PageSize   int    `json:"pageSize"`
-	Sorts      []Sort `json:"sorts,omitempty"`
-	IsUnpaged  bool   `json:"isUnpaged,omitempty,omitzero"`
+	PageNumber int   `json:"page"`
+	PageSize   int   `json:"pageSize"`
+	Sorts      Sorts `json:"sorts,omitempty"`
+	IsUnpaged  bool  `json:"isUnpaged,omitempty,omitzero"`
 }
 
 func (p Slice[T]) GetItems() []T {
 	return p.Items
 }
 
-func (p Slice[T]) GetSorts() []Sort {
+func (p Slice[T]) GetSorts() Sorts {
 	return p.Sorts
 }
 
