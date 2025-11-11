@@ -121,7 +121,7 @@ func (t *Templates) scanNames() error {
 		name = strings.TrimSuffix(name, ext)
 
 		if prevPath, ok := t.nameMap[name]; ok {
-			return errors.New(fmt.Sprintf(`template name conflict: "%s" (files %s and %s)`, name, prevPath, path))
+			return fmt.Errorf(`template name conflict: "%s" (files %s and %s)`, name, prevPath, path)
 		}
 		t.nameMap[name] = path
 		return err

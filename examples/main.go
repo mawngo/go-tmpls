@@ -45,7 +45,7 @@ func main() {
 			"layouts/", "_layouts/",
 		),
 		// On execute callback example: always set the content type to text/html.
-		tmpls.WithOnExecute(func(tmpl tmpls.Template, w io.Writer, _ any) error {
+		tmpls.WithOnExecute(func(_ tmpls.Template, w io.Writer, _ any) error {
 			if rwr, ok := w.(http.ResponseWriter); ok {
 				if rwr.Header().Get("Content-Type") == "" {
 					rwr.Header().Set("Content-Type", "text/html; charset=utf-8")
