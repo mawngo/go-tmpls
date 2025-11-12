@@ -265,6 +265,15 @@ func (t *Templates) Preload() ([]Template, error) {
 // Lookup returns a cloned template by name.
 // If the template does not exist, it returns nil.
 func (t *Templates) Lookup(name string) (Template, error) {
+	tmpl, err := t.lookup(name)
+	if err != nil {
+		return nil, err
+	}
+	return tmpl.Clone()
+}
+
+// lookup returns a template by name.
+func (t *Templates) lookup(name string) (Template, error) {
 	if t.nocache {
 		t.mu.Lock()
 		defer t.mu.Unlock()
@@ -274,14 +283,14 @@ func (t *Templates) Lookup(name string) (Template, error) {
 	t.mu.RLock()
 	if tmpl, ok := t.templateMap[name]; ok {
 		defer t.mu.RUnlock()
-		return tmpl.Clone()
+		return tmpl, nil
 	}
 	t.mu.RUnlock()
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if tmpl, ok := t.templateMap[name]; ok {
-		return tmpl.Clone()
+		return tmpl, nil
 	}
 
 	tmpl, err := t.resolve(nil, nil, name)
@@ -289,12 +298,12 @@ func (t *Templates) Lookup(name string) (Template, error) {
 		return nil, err
 	}
 	t.templateMap[name] = tmpl
-	return tmpl.Clone()
+	return tmpl, nil
 }
 
 // ExecuteTemplate execute the specified template with the given data.
 func (t *Templates) ExecuteTemplate(wr io.Writer, name string, data any) error {
-	tmpl, err := t.Lookup(name)
+	tmpl, err := t.lookup(name)
 	if err != nil {
 		return err
 	}
