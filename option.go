@@ -21,7 +21,8 @@ type templatesOptions struct {
 	excludeFuncs    []string
 	disableBuiltins bool
 
-	onExecute OnTemplateExecuteFn
+	preloadFilter func(name string, path string) bool
+	onExecute     OnTemplateExecuteFn
 }
 
 // WithExtensions configure included template extensions.
@@ -68,6 +69,14 @@ func WithPrefixMap(keyValues ...string) TemplatesOption {
 func WithNocache(nocache bool) TemplatesOption {
 	return func(options *templatesOptions) {
 		options.nocache = nocache
+	}
+}
+
+// WithPreloadFilter set a filter function to filter templates that will be preloaded.
+// By default, any template whose resolved name starts with an underscore (_) will be ignored.
+func WithPreloadFilter(filter func(name string, path string) bool) TemplatesOption {
+	return func(options *templatesOptions) {
+		options.preloadFilter = filter
 	}
 }
 

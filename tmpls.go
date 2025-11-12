@@ -22,11 +22,12 @@ const templateNameRegexStr = `{{\s*(template|define)\s+"([^"]+)"(?:\s+[\s\S]*?)?
 
 // Templates collection of cached and preprocessed templates.
 type Templates struct {
-	fs         fs.FS
-	extensions map[string]struct{}
-	prefixMap  map[string]string
-	separator  string
-	onExecute  OnTemplateExecuteFn
+	fs            fs.FS
+	extensions    map[string]struct{}
+	prefixMap     map[string]string
+	separator     string
+	onExecute     OnTemplateExecuteFn
+	preloadFilter func(name string, path string) bool
 
 	baseFn func() (Template, error)
 	// Map of parsed template by name.
@@ -56,6 +57,9 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 				Template: htmltemplate.New(""),
 			}
 		},
+		preloadFilter: func(name string, path string) bool {
+			return name[0] != '_'
+		},
 	}
 
 	for _, option := range options {
@@ -63,12 +67,13 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 	}
 
 	t := &Templates{
-		fs:         fs,
-		nocache:    opt.nocache,
-		extensions: opt.extensions,
-		prefixMap:  opt.prefixMap,
-		separator:  opt.pathSeparator,
-		onExecute:  opt.onExecute,
+		fs:            fs,
+		nocache:       opt.nocache,
+		extensions:    opt.extensions,
+		prefixMap:     opt.prefixMap,
+		separator:     opt.pathSeparator,
+		onExecute:     opt.onExecute,
+		preloadFilter: opt.preloadFilter,
 
 		nameMap:           make(map[string]string),
 		templateMap:       make(map[string]Template),
@@ -184,12 +189,15 @@ func (t *Templates) resolve(base Template, name string) (Template, error) {
 }
 
 // Preload parse all scanned templates.
-// Any template whose resolved name starts with an underscore (_) will be ignored.
+// You can configure which templates to preload by [WithPreloadFilter].
+// By default, any template whose resolved name starts with an underscore (_) will be ignored.
 func (t *Templates) Preload() ([]Template, error) {
 	res := make([]Template, 0, 10)
-	for name := range t.nameMap {
-		if name[0] == '_' {
-			continue
+	for name, path := range t.nameMap {
+		if t.preloadFilter != nil {
+			if !t.preloadFilter(name, path) {
+				continue
+			}
 		}
 		temp, err := t.Lookup(name)
 		if err != nil {
