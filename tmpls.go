@@ -18,7 +18,7 @@ import (
 //   - {{template "name"}}
 //   - {{template "name" pipeline}}
 //   - {{define "name"}}
-var templateNameRegex = regexp.MustCompile(`{{\s*(template|define)\s+"([^"]+)"(?:\s+[\s\S]*?)?\s*}}`)
+const templateNameRegexStr = `{{\s*(template|define)\s+"([^"]+)"(?:\s+[\s\S]*?)?\s*}}`
 
 // Templates collection of cached and preprocessed templates.
 type Templates struct {
@@ -35,6 +35,8 @@ type Templates struct {
 	nameMap map[string]string
 	mu      sync.RWMutex
 	nocache bool
+
+	templateNameRegex *regexp.Regexp
 }
 
 // New create a new [Templates] instance.
@@ -68,8 +70,9 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 		separator:  opt.pathSeparator,
 		onExecute:  opt.onExecute,
 
-		nameMap:     make(map[string]string),
-		templateMap: make(map[string]Template),
+		nameMap:           make(map[string]string),
+		templateMap:       make(map[string]Template),
+		templateNameRegex: regexp.MustCompile(templateNameRegexStr),
 	}
 
 	t.baseFn = func() (Template, error) {
@@ -148,7 +151,7 @@ func (t *Templates) resolve(base Template, name string) (Template, error) {
 	}
 
 	content := string(b)
-	includedTemplateMatches := templateNameRegex.FindAllStringSubmatch(content, -1)
+	includedTemplateMatches := t.templateNameRegex.FindAllStringSubmatch(content, -1)
 	// Exclude template names that are also having {{define}} block.
 	excludedTemplateNames := make(map[string]struct{})
 	for _, v := range includedTemplateMatches {
