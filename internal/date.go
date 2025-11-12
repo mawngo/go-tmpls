@@ -50,16 +50,27 @@ func duration(sec any) string {
 	case string:
 		n, _ = strconv.ParseInt(value, 10, 64)
 	case int:
+		n = int64(value)
 	case int8:
+		n = int64(value)
 	case int16:
+		n = int64(value)
 	case int32:
+		n = int64(value)
 	case int64:
+		n = value
 	case uint:
+		n = int64(value)
 	case uint8:
+		n = int64(value)
 	case uint16:
+		n = int64(value)
 	case uint32:
+		n = int64(value)
 	case uint64:
+		n = int64(value)
 	case float32:
+		n = int64(value)
 	case float64:
 		n = int64(value)
 	}
@@ -70,7 +81,7 @@ func duration(sec any) string {
 // Strings and time.Duration gets parsed as a duration, while a time.Time is calculated as the duration since.
 //
 // Example usage: durationRound "2400h10m5s" => "3mo"
-func durationRound(duration interface{}) string {
+func durationRound(duration any) string {
 	var d time.Duration
 	switch duration := duration.(type) {
 	default:
@@ -78,20 +89,33 @@ func durationRound(duration interface{}) string {
 	case string:
 		d, _ = time.ParseDuration(duration)
 	case int:
+		d = time.Duration(int64(duration))
 	case int8:
-	case int16:
-	case int32:
-	case int64:
-	case uint:
-	case uint8:
-	case uint16:
-	case uint32:
-	case uint64:
-	case float32:
-	case float64:
 		d = time.Duration(duration)
+	case int16:
+		d = time.Duration(duration)
+	case int32:
+		d = time.Duration(duration)
+	case int64:
+		d = time.Duration(duration)
+	case uint:
+		d = time.Duration(int64(duration))
+	case uint8:
+		d = time.Duration(int64(duration))
+	case uint16:
+		d = time.Duration(int64(duration))
+	case uint32:
+		d = time.Duration(int64(duration))
+	case uint64:
+		d = time.Duration(int64(duration))
+	case float32:
+		d = time.Duration(int64(duration))
+	case float64:
+		d = time.Duration(int64(duration))
 	case time.Time:
 		d = time.Since(duration)
+	case time.Duration:
+		d = duration
 	}
 
 	u := uint64(d)
