@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 )
 
 func NewBuiltinFuncMap(excludes ...string) map[string]any {
@@ -87,8 +86,14 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 		"lower": strings.ToLower,
 		"title": strings.ToTitle,
 
-		"date":     date,
-		"datetime": datetime,
+		"datefmt":       datefmt,
+		"datetimefmt":   datetimefmt,
+		"dateInZone":    dateInZone,
+		"date":          date,
+		"now":           now,
+		"toDate":        toDate,
+		"duration":      duration,
+		"durationRound": durationRound,
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
@@ -126,24 +131,6 @@ func strval(v any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
-}
-
-// date format time.
-// The default format is time.DateOnly.
-func date(v time.Time, format ...string) string {
-	if len(format) == 0 {
-		return v.Format(time.DateOnly)
-	}
-	return v.Format(format[0])
-}
-
-// datetime format time.
-// The default format is time.DateTime.
-func datetime(v time.Time, format ...string) string {
-	if len(format) == 0 {
-		return v.Format(time.DateTime)
-	}
-	return v.Format(format[0])
 }
 
 // dict https://github.com/Masterminds/sprig.
