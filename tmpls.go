@@ -29,7 +29,7 @@ type Templates struct {
 	onExecute     OnTemplateExecuteFn
 	preloadFilter func(name string, path string) bool
 
-	baseFn func() (Template, error)
+	baseFn func(name string) (Template, error)
 	// Map of parsed template by name.
 	templateMap map[string]Template
 	// Map of processed template name to template paths.
@@ -52,9 +52,9 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 			".gohtml": {},
 			".gotxt":  {},
 		},
-		initFn: func() Template {
+		initFn: func(name string) Template {
 			return htmlTemplate{
-				Template: htmltemplate.New(""),
+				Template: htmltemplate.New(name),
 			}
 		},
 		preloadFilter: func(name string, _ string) bool {
@@ -80,8 +80,8 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 		templateNameRegex: regexp.MustCompile(templateNameRegexStr),
 	}
 
-	t.baseFn = func() (Template, error) {
-		base := opt.initFn()
+	t.baseFn = func(name string) (Template, error) {
+		base := opt.initFn(name)
 		if !opt.disableBuiltins {
 			if funcs := internal.NewBuiltinFuncMap(opt.excludeFuncs...); len(funcs) > 0 {
 				base = base.Funcs(funcs)
@@ -144,7 +144,7 @@ func (t *Templates) resolve(base Template, name string) (Template, error) {
 
 	if base == nil {
 		var err error
-		base, err = t.baseFn()
+		base, err = t.baseFn(name)
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +249,7 @@ func (t *Templates) ExecuteTemplate(wr io.Writer, name string, data any) error {
 			return err
 		}
 	}
-	return tmpl.ExecuteTemplate(wr, name, data)
+	return tmpl.Execute(wr, data)
 }
 
 // MustExecuteTemplate execute the specified template with the given data and panic if any error occurs.

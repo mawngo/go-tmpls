@@ -13,7 +13,7 @@ type OnTemplateExecuteFn func(t Template, w io.Writer, data any) error
 type templatesOptions struct {
 	nocache       bool
 	pathSeparator string
-	initFn        func() Template
+	initFn        func(name string) Template
 	extensions    map[string]struct{}
 	prefixMap     map[string]string
 
@@ -83,9 +83,9 @@ func WithPreloadFilter(filter func(name string, path string) bool) TemplatesOpti
 // WithTextMode replace the underlying implementation with text/template.
 func WithTextMode() TemplatesOption {
 	return func(options *templatesOptions) {
-		options.initFn = func() Template {
+		options.initFn = func(name string) Template {
 			return textTemplate{
-				Template: texttemplate.New(""),
+				Template: texttemplate.New(name),
 			}
 		}
 	}

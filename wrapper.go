@@ -29,6 +29,7 @@ type Template interface {
 	Parse(text string) (Template, error)
 	// ExecuteTemplate See [html/template.Template.ExecuteTemplate].
 	ExecuteTemplate(wr io.Writer, name string, data any) error
+	Execute(wr io.Writer, data any) error
 }
 
 // htmlTemplate simple wrapper for [html/template.Template].
