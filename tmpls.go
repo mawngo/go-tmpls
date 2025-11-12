@@ -21,6 +21,8 @@ import (
 //   - {{block "name" pipeline}}
 const templateNameRegexStr = `{{\s*(template|define|block)\s+"([^"]+)"(?:\s+[\s\S]*?)?\s*}}`
 
+var errTemplateNotFound = errors.New("template not found")
+
 // Templates collection of cached and preprocessed templates.
 type Templates struct {
 	fs            fs.FS
@@ -78,7 +80,6 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 		onExecute:     opt.onExecute,
 		preloadFilter: opt.preloadFilter,
 
-		nameMap:           make(map[string]string),
 		templateMap:       make(map[string]Template),
 		templateNameRegex: regexp.MustCompile(templateNameRegexStr),
 	}
@@ -103,6 +104,7 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 }
 
 func (t *Templates) scanNames() error {
+	t.nameMap = make(map[string]string)
 	return fs.WalkDir(t.fs, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -142,7 +144,7 @@ func (t *Templates) scanNames() error {
 func (t *Templates) resolve(base Template, stackMap map[string][]string, name string) (Template, error) {
 	path, ok := t.nameMap[name]
 	if !ok {
-		return nil, errors.New("template name not found '" + name + "'")
+		return nil, fmt.Errorf("template [%s] %w", name, errTemplateNotFound)
 	}
 
 	shouldBuildStack := false
@@ -277,6 +279,18 @@ func (t *Templates) lookup(name string) (Template, error) {
 	if t.nocache {
 		t.mu.Lock()
 		defer t.mu.Unlock()
+		tmpl, err := t.resolve(nil, nil, name)
+		if err == nil {
+			return tmpl, nil
+		}
+
+		// Rescan to cover error caused by template name change or new template added.
+		if errors.Is(err, errTemplateNotFound) {
+			err := t.scanNames()
+			if err != nil {
+				return nil, err
+			}
+		}
 		return t.resolve(nil, nil, name)
 	}
 

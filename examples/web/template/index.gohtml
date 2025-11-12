@@ -17,4 +17,11 @@
         <a href="{{ .Page.PathToSize 48 }}">Size 48</a>
     </div>
     {{ template "_paginator" .Page }}
+    <h1 class="title m-6">
+        {{ template "_hello" . }}
+    </h1>
+{{ end }}
+
+{{ define "@stack:scripts" }}
+    <script>console.log("index")</script>
 {{ end }}
