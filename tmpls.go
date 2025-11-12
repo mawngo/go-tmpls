@@ -18,7 +18,8 @@ import (
 //   - {{template "name"}}
 //   - {{template "name" pipeline}}
 //   - {{define "name"}}
-const templateNameRegexStr = `{{\s*(template|define)\s+"([^"]+)"(?:\s+[\s\S]*?)?\s*}}`
+//   - {{block "name" pipeline}}
+const templateNameRegexStr = `{{\s*(template|define|block)\s+"([^"]+)"(?:\s+[\s\S]*?)?\s*}}`
 
 // Templates collection of cached and preprocessed templates.
 type Templates struct {
@@ -36,6 +37,7 @@ type Templates struct {
 	nameMap map[string]string
 	mu      sync.RWMutex
 	nocache bool
+	nostack bool
 
 	templateNameRegex *regexp.Regexp
 }
@@ -69,6 +71,7 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 	t := &Templates{
 		fs:            fs,
 		nocache:       opt.nocache,
+		nostack:       opt.nostack,
 		extensions:    opt.extensions,
 		prefixMap:     opt.prefixMap,
 		separator:     opt.pathSeparator,
@@ -136,18 +139,21 @@ func (t *Templates) scanNames() error {
 	})
 }
 
-func (t *Templates) resolve(base Template, name string) (Template, error) {
+func (t *Templates) resolve(base Template, stackMap map[string][]string, name string) (Template, error) {
 	path, ok := t.nameMap[name]
 	if !ok {
 		return nil, errors.New("template name not found '" + name + "'")
 	}
 
+	shouldBuildStack := false
 	if base == nil {
 		var err error
 		base, err = t.baseFn(name)
 		if err != nil {
 			return nil, err
 		}
+		stackMap = make(map[string][]string)
+		shouldBuildStack = true
 	}
 
 	b, err := fs.ReadFile(t.fs, path)
@@ -156,34 +162,82 @@ func (t *Templates) resolve(base Template, name string) (Template, error) {
 	}
 
 	content := string(b)
-	includedTemplateMatches := t.templateNameRegex.FindAllStringSubmatch(content, -1)
-	// Exclude template names that are also having {{define}} block.
+	includedTemplateMatches := t.templateNameRegex.FindAllStringSubmatchIndex(content, -1)
+	// Exclude template names that are also having {{define}} and {{block}} block.
 	excludedTemplateNames := make(map[string]struct{})
+	replacements := make([]string, 0, 10)
 	for _, v := range includedTemplateMatches {
-		if v[1] == "template" {
+		action := content[v[2]:v[3]]
+		if action == "template" {
 			continue
 		}
-		name := v[2]
-		if len(name) == 0 {
+		templateName := content[v[4]:v[5]]
+		if len(templateName) == 0 {
 			continue
 		}
-		excludedTemplateNames[name] = struct{}{}
+		excludedTemplateNames[templateName] = struct{}{}
+		// Register push stacked template.
+		if !t.nostack && action == "define" && strings.HasPrefix(templateName, "@stack:") {
+			nameList, ok := stackMap[templateName]
+			if !ok {
+				nameList = make([]string, 0, 5)
+			}
+			replacedName := templateName + ":" + name
+			stackMap[templateName] = append(nameList, replacedName)
+
+			originalMatch := content[v[0]:v[1]]
+			replacedMatch := content[v[0]:v[4]] + replacedName + content[v[5]:v[1]]
+			replacements = append(replacements, originalMatch, replacedMatch)
+		}
 	}
 
 	// Process included templates top down, then finally parse the content.
 	for _, v := range includedTemplateMatches {
-		name := v[2]
+		name := content[v[4]:v[5]]
 		if len(name) == 0 {
 			continue
 		}
 		if _, ok := excludedTemplateNames[name]; ok {
 			continue
 		}
+		// Register stacked template name.
+		if !t.nostack && strings.HasPrefix(name, "@stack:") {
+			if _, ok := stackMap[name]; !ok {
+				stackMap[name] = make([]string, 0, 5)
+			}
+			continue
+		}
 		var err error
-		base, err = t.resolve(base, name)
+		base, err = t.resolve(base, stackMap, name)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Handle stacked templates.
+	if shouldBuildStack {
+		for stackName, pushedNames := range stackMap {
+			stackContent := ""
+			if len(pushedNames) > 0 {
+				var sb strings.Builder
+				// Build stack template.
+				for _, name := range pushedNames {
+					sb.WriteString("{{template \"")
+					sb.WriteString(name)
+					sb.WriteString("\" .}}")
+				}
+				stackContent = sb.String()
+			}
+			base, err = base.New(stackName).Parse(stackContent)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if len(replacements) > 0 {
+		replacer := strings.NewReplacer(replacements...)
+		content = replacer.Replace(content)
 	}
 	return base.New(name).Parse(content)
 }
@@ -214,7 +268,7 @@ func (t *Templates) Lookup(name string) (Template, error) {
 	if t.nocache {
 		t.mu.Lock()
 		defer t.mu.Unlock()
-		return t.resolve(nil, name)
+		return t.resolve(nil, nil, name)
 	}
 
 	t.mu.RLock()
@@ -230,7 +284,7 @@ func (t *Templates) Lookup(name string) (Template, error) {
 		return tmpl.Clone()
 	}
 
-	tmpl, err := t.resolve(nil, name)
+	tmpl, err := t.resolve(nil, nil, name)
 	if err != nil {
 		return nil, err
 	}

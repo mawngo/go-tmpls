@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ block "title" . }}{{ end }}</title>
     <link rel="stylesheet" href="/static/bulma.min.css">
+    {{ template "@stack:styles" }}
 </head>
 <body>
+
 <main class="container has-text-centered">
     {{block "main" .}}{{ end }}
 </main>
+
+{{ template "@stack:scripts" }}
 </body>
 </html>

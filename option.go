@@ -12,6 +12,7 @@ type OnTemplateExecuteFn func(t Template, w io.Writer, data any) error
 
 type templatesOptions struct {
 	nocache       bool
+	nostack       bool
 	pathSeparator string
 	initFn        func(name string) Template
 	extensions    map[string]struct{}
@@ -65,10 +66,24 @@ func WithPrefixMap(keyValues ...string) TemplatesOption {
 	}
 }
 
-// WithNocache disable the template cache, making the cache reparse the template on each call.
+// WithNocache disable or enable the template cache.
 func WithNocache(nocache bool) TemplatesOption {
 	return func(options *templatesOptions) {
 		options.nocache = nocache
+	}
+}
+
+// WithoutCache disable the template cache, making the cache reparse the template on each call.
+func WithoutCache() TemplatesOption {
+	return func(options *templatesOptions) {
+		options.nocache = true
+	}
+}
+
+// WithoutStacking disable the template stacking feature.
+func WithoutStacking() TemplatesOption {
+	return func(options *templatesOptions) {
+		options.nostack = true
 	}
 }
 

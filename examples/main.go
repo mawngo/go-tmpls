@@ -3,8 +3,10 @@ package main
 import (
 	"embed"
 	"flag"
+	"fmt"
 	"github.com/mawngo/go-tmpls/v2"
 	"github.com/mawngo/go-tmpls/v2/page"
+	html "html/template"
 	"io"
 	"io/fs"
 	"net/http"
@@ -40,10 +42,11 @@ func main() {
 		tmpls.WithNocache(*devmode),
 		// Only parse .gohtml files.
 		tmpls.WithExtensions(".gohtml"),
-		// Rename all templates inside _components/ from _components.(name) to _(name).
-		tmpls.WithPrefixMap("_components/", "_"),
+		// Rename all templates inside _partials/ from _partials.(name) to _(name).
+		tmpls.WithPrefixMap("_partials/", "_"),
 		// On execute callback example: always set the content type to text/html.
-		tmpls.WithOnExecute(func(_ tmpls.Template, w io.Writer, _ any) error {
+		tmpls.WithOnExecute(func(tmpl tmpls.Template, w io.Writer, _ any) error {
+			fmt.Printf("Executing [%s]%s\n", tmpl.Name(), tmpl.Unwrap().(*html.Template).DefinedTemplates())
 			if rwr, ok := w.(http.ResponseWriter); ok {
 				if rwr.Header().Get("Content-Type") == "" {
 					rwr.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -62,7 +65,7 @@ func main() {
 		panic(err)
 	}
 	for _, template := range preloaded {
-		println(template.Name())
+		fmt.Printf("Preloaded [%s]\n", template.Name())
 	}
 
 	http.Handle("GET /static/", http.StripPrefix("/static/", static))
