@@ -141,21 +141,34 @@ func (t *Templates) scanNames() error {
 	})
 }
 
-func (t *Templates) resolve(base Template, stackMap map[string][]string, name string) (Template, error) {
+type resolveContext struct {
+	base     Template
+	stackMap map[string][]string
+}
+
+func (t *Templates) resolve(c *resolveContext, name string) (Template, error) {
 	path, ok := t.nameMap[name]
 	if !ok {
 		return nil, fmt.Errorf("template [%s] %w", name, errTemplateNotFound)
 	}
 
 	shouldBuildStack := false
-	if base == nil {
-		var err error
-		base, err = t.baseFn(name)
+	if c == nil {
+		base, err := t.baseFn(name)
 		if err != nil {
 			return nil, err
 		}
-		stackMap = make(map[string][]string)
 		shouldBuildStack = true
+		c = &resolveContext{
+			base:     base,
+			stackMap: make(map[string][]string),
+		}
+	} else {
+		// Check if the template has been parsed before.
+		parsed := c.base.Lookup(name)
+		if parsed != nil {
+			return parsed, nil
+		}
 	}
 
 	b, err := fs.ReadFile(t.fs, path)
@@ -180,12 +193,12 @@ func (t *Templates) resolve(base Template, stackMap map[string][]string, name st
 		excludedTemplateNames[templateName] = struct{}{}
 		// Register push stacked template.
 		if !t.nostack && action == "define" && strings.HasPrefix(templateName, "@stack:") {
-			nameList, ok := stackMap[templateName]
+			nameList, ok := c.stackMap[templateName]
 			if !ok {
 				nameList = make([]string, 0, 5)
 			}
 			replacedName := templateName + ":" + name
-			stackMap[templateName] = append(nameList, replacedName)
+			c.stackMap[templateName] = append(nameList, replacedName)
 
 			originalMatch := content[v[0]:v[1]]
 			replacedMatch := content[v[0]:v[4]] + replacedName + content[v[5]:v[1]]
@@ -204,13 +217,13 @@ func (t *Templates) resolve(base Template, stackMap map[string][]string, name st
 		}
 		// Register stacked template name.
 		if !t.nostack && strings.HasPrefix(name, "@stack:") {
-			if _, ok := stackMap[name]; !ok {
-				stackMap[name] = make([]string, 0, 5)
+			if _, ok := c.stackMap[name]; !ok {
+				c.stackMap[name] = make([]string, 0, 5)
 			}
 			continue
 		}
 		var err error
-		base, err = t.resolve(base, stackMap, name)
+		c.base, err = t.resolve(c, name)
 		if err != nil {
 			return nil, err
 		}
@@ -218,7 +231,7 @@ func (t *Templates) resolve(base Template, stackMap map[string][]string, name st
 
 	// Handle stacked templates.
 	if shouldBuildStack {
-		for stackName, pushedNames := range stackMap {
+		for stackName, pushedNames := range c.stackMap {
 			stackContent := ""
 			if len(pushedNames) > 0 {
 				var sb strings.Builder
@@ -230,7 +243,7 @@ func (t *Templates) resolve(base Template, stackMap map[string][]string, name st
 				}
 				stackContent = sb.String()
 			}
-			base, err = base.New(stackName).Parse(stackContent)
+			c.base, err = c.base.New(stackName).Parse(stackContent)
 			if err != nil {
 				return nil, err
 			}
@@ -241,7 +254,7 @@ func (t *Templates) resolve(base Template, stackMap map[string][]string, name st
 		replacer := strings.NewReplacer(replacements...)
 		content = replacer.Replace(content)
 	}
-	return base.New(name).Parse(content)
+	return c.base.New(name).Parse(content)
 }
 
 // Preload parse all scanned templates.
@@ -279,7 +292,7 @@ func (t *Templates) lookup(name string) (Template, error) {
 	if t.nocache {
 		t.mu.Lock()
 		defer t.mu.Unlock()
-		tmpl, err := t.resolve(nil, nil, name)
+		tmpl, err := t.resolve(nil, name)
 		if err == nil {
 			return tmpl, nil
 		}
@@ -291,7 +304,7 @@ func (t *Templates) lookup(name string) (Template, error) {
 				return nil, err
 			}
 		}
-		return t.resolve(nil, nil, name)
+		return t.resolve(nil, name)
 	}
 
 	t.mu.RLock()
@@ -307,7 +320,7 @@ func (t *Templates) lookup(name string) (Template, error) {
 		return tmpl, nil
 	}
 
-	tmpl, err := t.resolve(nil, nil, name)
+	tmpl, err := t.resolve(nil, name)
 	if err != nil {
 		return nil, err
 	}

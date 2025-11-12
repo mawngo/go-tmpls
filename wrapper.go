@@ -24,11 +24,14 @@ type Template interface {
 	Clone() (Template, error)
 	// New See [html/template.Template.New].
 	New(name string) Template
+	// Lookup See [html/template.Template.Lookup].
+	Lookup(name string) Template
 
 	// Parse See [html/template.Template.Parse].
 	Parse(text string) (Template, error)
 	// ExecuteTemplate See [html/template.Template.ExecuteTemplate].
 	ExecuteTemplate(wr io.Writer, name string, data any) error
+	// Execute See [html/template.Template.Execute].
 	Execute(wr io.Writer, data any) error
 }
 
@@ -63,6 +66,14 @@ func (t htmlTemplate) Unwrap() any {
 	return t.Template
 }
 
+func (t htmlTemplate) Lookup(name string) Template {
+	if templ := t.Template.Lookup(name); templ != nil {
+		t.Template = templ
+		return t
+	}
+	return nil
+}
+
 // textTemplate simple wrapper for [text/template.Template].
 type textTemplate struct {
 	*text.Template
@@ -92,4 +103,12 @@ func (t textTemplate) Funcs(funcs FuncMap) Template {
 
 func (t textTemplate) Unwrap() any {
 	return t.Template
+}
+
+func (t textTemplate) Lookup(name string) Template {
+	if templ := t.Template.Lookup(name); templ != nil {
+		t.Template = templ
+		return t
+	}
+	return nil
 }

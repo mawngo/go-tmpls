@@ -128,7 +128,7 @@ Index
 ```
 
 The defined stack block will only be rendered once per file, so if you include the same template multiple times,
-the content will only be rendered once.
+the content will only be rendered once (the first one).
 
 Under the hood, this feature is implemented by registering additional templates for each @stack template and each @stack
 define, so this feature could break if you have templates that start with `@stack:`.
