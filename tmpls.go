@@ -57,7 +57,7 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 				Template: htmltemplate.New(""),
 			}
 		},
-		preloadFilter: func(name string, path string) bool {
+		preloadFilter: func(name string, _ string) bool {
 			return name[0] != '_'
 		},
 	}

@@ -56,21 +56,21 @@ func NewSorts(raw []string) Sorts {
 type Sorts []Sort
 
 // UnmarshalText support coma separated list.
-func (i *Sorts) UnmarshalText(text []byte) error {
+func (s *Sorts) UnmarshalText(text []byte) error {
 	sorts := strings.Split(string(text), ",")
-	*i = NewSorts(sorts)
+	*s = NewSorts(sorts)
 	return nil
 }
 
 // UnmarshalParam support coma separated list.
-func (i *Sorts) UnmarshalParam(param string) error {
+func (s *Sorts) UnmarshalParam(param string) error {
 	sorts := strings.Split(param, ",")
-	*i = NewSorts(sorts)
+	*s = NewSorts(sorts)
 	return nil
 }
 
 // UnmarshalJSON support coma separated list string or array of string.
-func (i *Sorts) UnmarshalJSON(b []byte) error {
+func (s *Sorts) UnmarshalJSON(b []byte) error {
 	data := string(b)
 	if data == "null" {
 		return nil
@@ -78,14 +78,14 @@ func (i *Sorts) UnmarshalJSON(b []byte) error {
 
 	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
 		data = data[len(`"`) : len(data)-len(`"`)]
-		return i.UnmarshalParam(data)
+		return s.UnmarshalParam(data)
 	}
 
 	var sorts []string
 	if err := json.Unmarshal(b, &sorts); err != nil {
 		return err
 	}
-	*i = NewSorts(sorts)
+	*s = NewSorts(sorts)
 	return nil
 }
 

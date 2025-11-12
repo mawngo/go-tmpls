@@ -13,7 +13,7 @@ func now() time.Time {
 // datefmt format time.
 // The default format is time.DateOnly.
 //
-// Example usage: datefmt (now)
+// Example usage: datefmt (now).
 func datefmt(v time.Time, format ...string) string {
 	if len(format) == 0 {
 		return v.Format(time.DateOnly)
@@ -24,7 +24,7 @@ func datefmt(v time.Time, format ...string) string {
 // datetimefmt format time.
 // The default format is time.DateTime.
 //
-// Example usage: datetimefmt (now)
+// Example usage: datetimefmt (now).
 func datetimefmt(v time.Time, format ...string) string {
 	if len(format) == 0 {
 		return v.Format(time.DateTime)
@@ -34,14 +34,14 @@ func datetimefmt(v time.Time, format ...string) string {
 
 // date formats a date.
 //
-// Example usage: now | date "2006-01-02"
+// Example usage: now | date "2006-01-02".
 func date(fmt string, date any) string {
 	return dateInZone(fmt, date, "Local")
 }
 
 // duration Formats a given number of seconds as a time.Duration.
 //
-// Example usage: duration 95 => 1m35s
+// Example usage: duration 95 => 1m35s.
 func duration(sec any) string {
 	var n int64
 	switch value := sec.(type) {
@@ -80,7 +80,7 @@ func duration(sec any) string {
 // durationRound Rounds a given duration to the most significant unit.
 // Strings and time.Duration gets parsed as a duration, while a time.Time is calculated as the duration since.
 //
-// Example usage: durationRound "2400h10m5s" => "3mo"
+// Example usage: durationRound "2400h10m5s" => "3mo".
 func durationRound(duration any) string {
 	var d time.Duration
 	switch duration := duration.(type) {
@@ -151,7 +151,7 @@ func durationRound(duration any) string {
 
 // dateInZone format a date in a specific zone.
 //
-// Example usage: dateInZone "2006-01-02" (now) "UTC"
+// Example usage: dateInZone "2006-01-02" (now) "UTC".
 func dateInZone(fmt string, date any, zone string) string {
 	var t time.Time
 	switch date := date.(type) {
@@ -182,7 +182,7 @@ func dateInZone(fmt string, date any, zone string) string {
 // If the string can’t be converted it returns the zero value.
 //
 // This is useful when you want to convert a string date to another format (using pipe). The example below converts
-// Example usage: toDate "2006-01-02" "2017-12-31" | date "02/01/2006"
+// Example usage: toDate "2006-01-02" "2017-12-31" | date "02/01/2006".
 func toDate(fmt, str string) time.Time {
 	t, _ := time.ParseInLocation(fmt, str, time.Local)
 	return t
