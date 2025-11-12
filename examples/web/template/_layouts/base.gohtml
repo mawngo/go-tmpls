@@ -13,6 +13,10 @@
     {{block "main" .}}{{ end }}
 </main>
 
-{{ template "@stack:scripts" }}
+{{ template "@stack:scripts" . }}
+
+{{ define "@stack:scripts" }}
+    <script>console.log("base")</script>
+{{ end }}
 </body>
 </html>

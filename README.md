@@ -97,11 +97,9 @@ You can add custom funcs using `WithFuncs`.
 ## Template Stacking
 
 Provide a way to define a `stack` similar to laravel `@stack` and `@pushonce` directive.
-
 A `stack` behaves like a `template` but append the defined content instead of replacing it.
-To declare a stack, use `{{ template "@stack:name" . }}`.
 
-For example:
+To declare a stack, use `{{ template "@stack:name" . }}`. For example:
 
 ```txt
 // base.gotxt
@@ -128,7 +126,8 @@ Index
 ```
 
 The defined stack block will only be rendered once per file, so if you include the same template multiple times,
-the content will only be rendered once (the first one).
+the content will only be rendered once (the execution order is undefined).
+The context of the stack block is the context that you passed to the template that defined the stack.
 
 Under the hood, this feature is implemented by registering additional templates for each @stack template and each @stack
 define, so this feature could break if you have templates that start with `@stack:`.

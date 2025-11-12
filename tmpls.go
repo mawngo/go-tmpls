@@ -180,7 +180,7 @@ func (t *Templates) resolve(c *resolveContext, name string) (Template, error) {
 	includedTemplateMatches := t.templateNameRegex.FindAllStringSubmatchIndex(content, -1)
 	// Exclude template names that are also having {{define}} and {{block}} block.
 	excludedTemplateNames := make(map[string]struct{})
-	replacements := make([]string, 0, 10)
+	pushList := make([][]int, 0, 5)
 	for _, v := range includedTemplateMatches {
 		action := content[v[2]:v[3]]
 		if action == "template" {
@@ -191,22 +191,15 @@ func (t *Templates) resolve(c *resolveContext, name string) (Template, error) {
 			continue
 		}
 		excludedTemplateNames[templateName] = struct{}{}
-		// Register push stacked template.
+		// Mark stacked define.
 		if !t.nostack && action == "define" && strings.HasPrefix(templateName, "@stack:") {
-			nameList, ok := c.stackMap[templateName]
-			if !ok {
-				nameList = make([]string, 0, 5)
-			}
-			replacedName := templateName + ":" + name
-			c.stackMap[templateName] = append(nameList, replacedName)
-
-			originalMatch := content[v[0]:v[1]]
-			replacedMatch := content[v[0]:v[4]] + replacedName + content[v[5]:v[1]]
-			replacements = append(replacements, originalMatch, replacedMatch)
+			pushList = append(pushList, v)
 		}
 	}
 
-	// Process included templates top down, then finally parse the content.
+	// Process included templates from the down-up, so all parsed {{template}} is the last template, as we only
+	// parse once.
+	// then finally parse the content.
 	for _, v := range includedTemplateMatches {
 		name := content[v[4]:v[5]]
 		if len(name) == 0 {
@@ -215,7 +208,7 @@ func (t *Templates) resolve(c *resolveContext, name string) (Template, error) {
 		if _, ok := excludedTemplateNames[name]; ok {
 			continue
 		}
-		// Register stacked template name.
+		// Mark stacked template.
 		if !t.nostack && strings.HasPrefix(name, "@stack:") {
 			if _, ok := c.stackMap[name]; !ok {
 				c.stackMap[name] = make([]string, 0, 5)
@@ -229,16 +222,38 @@ func (t *Templates) resolve(c *resolveContext, name string) (Template, error) {
 		}
 	}
 
+	// Handle stacked defines.
+	if !t.nostack {
+		replacements := make([]string, 0, len(pushList)*2)
+		for _, v := range pushList {
+			templateName := content[v[4]:v[5]]
+			nameList, ok := c.stackMap[templateName]
+			if !ok {
+				nameList = make([]string, 0, 5)
+			}
+			replacedName := templateName + ":" + name
+			c.stackMap[templateName] = append(nameList, replacedName)
+
+			originalMatch := content[v[0]:v[1]]
+			replacedMatch := content[v[0]:v[4]] + replacedName + content[v[5]:v[1]]
+			replacements = append(replacements, originalMatch, replacedMatch)
+		}
+		if len(replacements) > 0 {
+			replacer := strings.NewReplacer(replacements...)
+			content = replacer.Replace(content)
+		}
+	}
+
 	// Handle stacked templates.
-	if shouldBuildStack {
+	if !t.nostack && shouldBuildStack {
 		for stackName, pushedNames := range c.stackMap {
 			stackContent := ""
 			if len(pushedNames) > 0 {
 				var sb strings.Builder
 				// Build stack template.
-				for _, name := range pushedNames {
+				for i := range pushedNames {
 					sb.WriteString("{{template \"")
-					sb.WriteString(name)
+					sb.WriteString(pushedNames[i])
 					sb.WriteString("\" .}}")
 				}
 				stackContent = sb.String()
@@ -250,10 +265,6 @@ func (t *Templates) resolve(c *resolveContext, name string) (Template, error) {
 		}
 	}
 
-	if len(replacements) > 0 {
-		replacer := strings.NewReplacer(replacements...)
-		content = replacer.Replace(content)
-	}
 	return c.base.New(name).Parse(content)
 }
 
