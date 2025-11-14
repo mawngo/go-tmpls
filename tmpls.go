@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	texttemplate "text/template"
 )
 
 // templateNameRegex regex for matching template name in
@@ -56,11 +57,6 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 			".gohtml": {},
 			".gotxt":  {},
 		},
-		initFn: func(name string) Template {
-			return htmlTemplate{
-				Template: htmltemplate.New(name),
-			}
-		},
 		preloadMatcher: func(name string, _ string) bool {
 			return name[0] != '_'
 		},
@@ -84,8 +80,21 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 		templateNameRegex: regexp.MustCompile(templateNameRegexStr),
 	}
 
+	initFn := func(name string) Template {
+		return htmlTemplate{
+			Template: htmltemplate.New(name),
+		}
+	}
+	if opt.texmode {
+		initFn = func(name string) Template {
+			return textTemplate{
+				Template: texttemplate.New(name),
+			}
+		}
+	}
+
 	t.baseFn = func(name string) (Template, error) {
-		base := opt.initFn(name)
+		base := initFn(name)
 		if !opt.disableBuiltins {
 			if funcs := internal.NewBuiltinFuncMap(opt.excludeFuncs...); len(funcs) > 0 {
 				base = base.Funcs(funcs)

@@ -3,7 +3,6 @@ package tmpls
 import (
 	"io"
 	"strings"
-	texttemplate "text/template"
 )
 
 // TemplatesOption is the option for configuring [Templates].
@@ -15,7 +14,7 @@ type templatesOptions struct {
 	nocache       bool
 	nostack       bool
 	pathSeparator string
-	initFn        func(name string) Template
+	texmode       bool
 	extensions    map[string]struct{}
 	prefixMap     map[string]string
 
@@ -105,11 +104,7 @@ func WithPreloadMatcher(filter func(name string, path string) bool) TemplatesOpt
 // WithTextMode replace the underlying implementation with text/template.
 func WithTextMode() TemplatesOption {
 	return func(options *templatesOptions) {
-		options.initFn = func(name string) Template {
-			return textTemplate{
-				Template: texttemplate.New(name),
-			}
-		}
+		options.texmode = true
 	}
 }
 
