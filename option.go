@@ -38,7 +38,7 @@ func WithExtensions(extensions ...string) TemplatesOption {
 	return func(options *templatesOptions) {
 		options.extensions = make(map[string]struct{}, len(extensions))
 		for _, ext := range extensions {
-			options.extensions[ext] = struct{}{}
+			options.extensions[strings.TrimSpace(ext)] = struct{}{}
 		}
 	}
 }
@@ -62,7 +62,7 @@ func WithPrefixMap(keyValues ...string) TemplatesOption {
 		pairCnt := len(keyValues) / 2
 		options.prefixMap = make(map[string]string, pairCnt)
 		for i := 0; i < pairCnt; i++ {
-			options.prefixMap[keyValues[i*2]] = keyValues[i*2+1]
+			options.prefixMap[strings.TrimSpace(keyValues[i*2])] = keyValues[i*2+1]
 		}
 	}
 }
