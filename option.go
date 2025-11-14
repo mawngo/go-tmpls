@@ -2,6 +2,7 @@ package tmpls
 
 import (
 	"io"
+	"strings"
 	texttemplate "text/template"
 )
 
@@ -22,8 +23,8 @@ type templatesOptions struct {
 	excludeFuncs    []string
 	disableBuiltins bool
 
-	preloadFilter func(name string, path string) bool
-	onExecute     OnTemplateExecuteFn
+	preloadMatcher func(name string, path string) bool
+	onExecute      OnTemplateExecuteFn
 }
 
 // WithExtensions configure included template extensions.
@@ -87,11 +88,17 @@ func WithoutStacking() TemplatesOption {
 	}
 }
 
-// WithPreloadFilter set a filter function to filter templates that will be preloaded.
-// By default, any template whose resolved name starts with an underscore (_) will be ignored.
+// WithPreloadFilter alias of [WithPreloadMatcher].
+// Deprecated: use [WithPreloadMatcher] instead.
 func WithPreloadFilter(filter func(name string, path string) bool) TemplatesOption {
+	return WithPreloadMatcher(filter)
+}
+
+// WithPreloadMatcher set a matcher function to match templates that will be preloaded.
+// By default, all templates will be preloaded except those whose name starts with an underscore (_).
+func WithPreloadMatcher(filter func(name string, path string) bool) TemplatesOption {
 	return func(options *templatesOptions) {
-		options.preloadFilter = filter
+		options.preloadMatcher = filter
 	}
 }
 

@@ -25,12 +25,12 @@ var errTemplateNotFound = errors.New("template not found")
 
 // Templates collection of cached and preprocessed templates.
 type Templates struct {
-	fs            fs.FS
-	extensions    map[string]struct{}
-	prefixMap     map[string]string
-	separator     string
-	onExecute     OnTemplateExecuteFn
-	preloadFilter func(name string, path string) bool
+	fs             fs.FS
+	extensions     map[string]struct{}
+	prefixMap      map[string]string
+	separator      string
+	onExecute      OnTemplateExecuteFn
+	preloadMatcher func(name string, path string) bool
 
 	baseFn func(name string) (Template, error)
 	// Map of parsed template by name.
@@ -61,7 +61,7 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 				Template: htmltemplate.New(name),
 			}
 		},
-		preloadFilter: func(name string, _ string) bool {
+		preloadMatcher: func(name string, _ string) bool {
 			return name[0] != '_'
 		},
 	}
@@ -71,14 +71,14 @@ func New(fs fs.FS, options ...TemplatesOption) (*Templates, error) {
 	}
 
 	t := &Templates{
-		fs:            fs,
-		nocache:       opt.nocache,
-		nostack:       opt.nostack,
-		extensions:    opt.extensions,
-		prefixMap:     opt.prefixMap,
-		separator:     opt.pathSeparator,
-		onExecute:     opt.onExecute,
-		preloadFilter: opt.preloadFilter,
+		fs:             fs,
+		nocache:        opt.nocache,
+		nostack:        opt.nostack,
+		extensions:     opt.extensions,
+		prefixMap:      opt.prefixMap,
+		separator:      opt.pathSeparator,
+		onExecute:      opt.onExecute,
+		preloadMatcher: opt.preloadMatcher,
 
 		templateMap:       make(map[string]Template),
 		templateNameRegex: regexp.MustCompile(templateNameRegexStr),
@@ -274,8 +274,8 @@ func (t *Templates) resolve(c *resolveContext, name string) (Template, error) {
 func (t *Templates) Preload() ([]Template, error) {
 	res := make([]Template, 0, 10)
 	for name, path := range t.nameMap {
-		if t.preloadFilter != nil {
-			if !t.preloadFilter(name, path) {
+		if t.preloadMatcher != nil {
+			if !t.preloadMatcher(name, path) {
 				continue
 			}
 		}
