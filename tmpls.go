@@ -307,6 +307,22 @@ func (t *Templates) Lookup(name string) (Template, error) {
 	return tmpl.Clone()
 }
 
+// LookupPath returns the path of the template in the file system by name.
+// Return an empty string if the template does not exist or not from the file system.
+func (t *Templates) LookupPath(name string) string {
+	if t.nocache {
+		// When nocache is enabled, the nameMap can be rescanned, so we need to lock it.
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		if p, ok := t.nameMap[name]; ok {
+			return p
+		}
+		_ = t.scanNames()
+		return t.nameMap[name]
+	}
+	return t.nameMap[name]
+}
+
 // lookup returns a template by name.
 func (t *Templates) lookup(name string) (Template, error) {
 	if t.nocache {
