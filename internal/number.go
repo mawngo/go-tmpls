@@ -2,6 +2,8 @@ package internal
 
 import (
 	"encoding/json"
+	"math"
+	"math/rand"
 	"strconv"
 	"time"
 )
@@ -75,4 +77,28 @@ func toFloat64(i any) float64 {
 
 func toInt(i any) int {
 	return toNumber[int](i)
+}
+
+// randInt returns a random integer between min (inclusive) and max (exclusive).
+func randInt(mini, maxi int) int { return rand.Intn(maxi-mini) + mini }
+
+// round returns a float value with the remainder rounded to the given number to digits after the decimal point.
+func round(a any, p int, rOpt ...float64) float64 {
+	roundOn := .5
+	if len(rOpt) > 0 {
+		roundOn = rOpt[0]
+	}
+	val := toFloat64(a)
+	places := toFloat64(p)
+
+	var round float64
+	pow := math.Pow(10, places)
+	digit := pow * val
+	_, div := math.Modf(digit)
+	if div >= roundOn {
+		round = math.Ceil(digit)
+	} else {
+		round = math.Floor(digit)
+	}
+	return round / pow
 }

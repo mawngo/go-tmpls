@@ -14,7 +14,8 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 		"until":   until,
 		"ternary": ternary,
 
-		"int": toInt,
+		"int":     toInt,
+		"randInt": randInt,
 		"add": func(a any, i ...any) int {
 			sum := toInt(a)
 			for _, b := range i {
@@ -49,6 +50,7 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 		},
 
 		"float64": toFloat64,
+		"round":   round,
 		"addf": func(a any, i ...any) float64 {
 			sum := toFloat64(a)
 			for _, b := range i {
