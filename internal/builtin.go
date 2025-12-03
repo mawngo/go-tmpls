@@ -96,6 +96,9 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 		"toDate":        toDate,
 		"duration":      duration,
 		"durationRound": durationRound,
+
+		"concat": concat,
+		"list":   list,
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
