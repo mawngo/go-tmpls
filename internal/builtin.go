@@ -99,6 +99,9 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 
 		"concat": concat,
 		"list":   list,
+
+		"toJson":       toJson,
+		"toPrettyJson": toPrettyJson,
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
