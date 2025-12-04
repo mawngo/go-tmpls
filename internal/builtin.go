@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"html/template"
 	"reflect"
 	"strings"
 )
@@ -99,9 +100,14 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 
 		"concat": concat,
 		"list":   list,
+		"append": push,
 
 		"toJson":       toJson,
 		"toPrettyJson": toPrettyJson,
+
+		"safeURL": func(s string) template.URL {
+			return template.URL(s)
+		},
 	}
 	for _, name := range excludes {
 		delete(builtin, name)
