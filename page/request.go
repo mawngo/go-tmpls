@@ -100,7 +100,7 @@ func NewPaging(url *url.URL, sorts ...string) Paging {
 
 	s := make([]string, 0, len(query[ParamSort]))
 	for _, sorts := range query[ParamSort] {
-		for _, sort := range strings.Split(sorts, ",") {
+		for sort := range strings.SplitSeq(sorts, ",") {
 			sort = strings.TrimSpace(sort)
 			if len(sort) > 0 {
 				s = append(s, sort)

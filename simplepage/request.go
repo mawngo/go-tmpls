@@ -39,17 +39,21 @@ type Paging struct {
 	// Unpaged is a special flags for disabling paging.
 	// Api that integrates this package should properly handle this field.
 	Unpaged bool `json:"-" form:"-"`
+	// Page the page number, starting from 1.
+	//
 	// Deprecated: write-only, for read use [Paging.PageNumber].
 	Page int `json:"page" form:"page"`
 	// When integrating with gin, it can be controlled by registering a "pagesize" validator.
 	// For other frameworks, you may need to check by hand or write your own integration.
+	//
 	// Deprecated: write-only, for read use [Paging.PageSize].
 	Size int `json:"pageSize" form:"pageSize" binding:"pagesize"`
 	// Sorts is a list or sort.
 	// For param, it can accept a list of values separated by comma.
 	// For JSON field, it can accept a string list of values separated by comma, or list of string.
 	// It is recommended to validate the sort values before using them.
-	// Deprecated: write-only, for read use [SortablePaging.PageSorts].
+	//
+	// Deprecated: write-only, for read use [Paging.PageSorts].
 	Sorts Sorts `json:"sorts" form:"sorts"`
 }
 

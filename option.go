@@ -60,7 +60,7 @@ func WithPrefixMap(keyValues ...string) TemplatesOption {
 	return func(options *templatesOptions) {
 		pairCnt := len(keyValues) / 2
 		options.prefixMap = make(map[string]string, pairCnt)
-		for i := 0; i < pairCnt; i++ {
+		for i := range pairCnt {
 			options.prefixMap[strings.TrimSpace(keyValues[i*2])] = keyValues[i*2+1]
 		}
 	}
@@ -88,6 +88,7 @@ func WithoutStacking() TemplatesOption {
 }
 
 // WithPreloadFilter alias of [WithPreloadMatcher].
+//
 // Deprecated: use [WithPreloadMatcher] instead.
 func WithPreloadFilter(filter func(name string, path string) bool) TemplatesOption {
 	return WithPreloadMatcher(filter)

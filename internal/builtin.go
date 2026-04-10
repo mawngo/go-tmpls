@@ -120,12 +120,12 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 func until(n int, v ...any) []any {
 	arr := make([]any, 0, n)
 	if len(v) == 0 {
-		for i := 0; i < n; i++ {
+		for i := range n {
 			arr = append(arr, i)
 		}
 		return arr
 	}
-	for i := 0; i < n; i++ {
+	for range n {
 		arr = append(arr, v[0])
 	}
 	return arr
@@ -173,7 +173,7 @@ func dig(ps ...any) (any, error) {
 	dict := ps[len(ps)-1].(map[string]any)
 	def := ps[len(ps)-2]
 	ks := make([]string, len(ps)-2)
-	for i := 0; i < len(ks); i++ {
+	for i := range len(ks) {
 		ks[i] = ps[i].(string)
 	}
 
@@ -206,7 +206,7 @@ func ternary(vt any, vf any, v bool) any {
 // From html/template/content.go
 // indirect returns the value, after dereferencing as many times
 // as necessary to reach the base type (or nil).
-func indirect(a interface{}) interface{} {
+func indirect(a any) any {
 	if a == nil {
 		return nil
 	}

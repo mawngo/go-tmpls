@@ -95,7 +95,7 @@ func (s Sorts) LabelStrict() string {
 		return ""
 	}
 	buff := strings.Builder{}
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		field := s[i].FieldStrict()
 		if field == "" {
 			continue
