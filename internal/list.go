@@ -38,8 +38,8 @@ func push(list any, v any) []any {
 		l2 := reflect.ValueOf(list)
 
 		l := l2.Len()
-		nl := make([]any, l)
-		for i := 0; i < l; i++ {
+		nl := make([]any, l, l+1)
+		for i := range l {
 			nl[i] = l2.Index(i).Interface()
 		}
 		return append(nl, v)
