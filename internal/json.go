@@ -2,14 +2,20 @@ package internal
 
 import "encoding/json"
 
-// toPrettyJson encodes an item into a pretty (indented) JSON string.
-func toPrettyJson(v interface{}) string {
-	output, _ := json.MarshalIndent(v, "", "  ")
+// toPrettyJSON encodes an item into a pretty (indented) JSON string.
+func toPrettyJSON(v any) string {
+	output, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return ""
+	}
 	return string(output)
 }
 
-// toJson encodes an item into a JSON string.
-func toJson(v any) string {
-	output, _ := json.Marshal(v)
+// toJSON encodes an item into a JSON string.
+func toJSON(v any) string {
+	output, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
 	return string(output)
 }

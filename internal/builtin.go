@@ -102,8 +102,8 @@ func NewBuiltinFuncMap(excludes ...string) map[string]any {
 		"list":   list,
 		"append": push,
 
-		"toJson":       toJson,
-		"toPrettyJson": toPrettyJson,
+		"toJson":       toJSON,
+		"toPrettyJson": toPrettyJSON,
 
 		"safeURL": func(s string) template.URL {
 			return template.URL(s)
